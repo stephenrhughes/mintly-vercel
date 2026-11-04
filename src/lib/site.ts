@@ -9,6 +9,9 @@ export const siteConfig = {
   description:
     "Bank account, sort code, IBAN and SWIFT validation APIs for UK businesses. No setup fees, no top-ups. Live in minutes.",
   supportEmail: "info@mintly.uk",
+  // The live public site. Legal pages and docs are linked here until they
+  // are ported (plan phase 6), and it stays the canonical URL afterwards.
+  canonicalUrl: "https://www.mintly.uk",
   apiBaseUrl: "https://api.mintly.uk",
   sandboxBaseUrl: "https://sandbox.mintly.uk",
 } as const;

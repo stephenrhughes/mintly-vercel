@@ -1,8 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 
-import { Button } from "@/components/ui/button";
-import { siteConfig } from "@/lib/site";
+import { AccountLinks } from "@/components/site/account-links";
 
 const nav = [
   { href: "/#products", label: "Products" },
@@ -28,9 +27,7 @@ export function SiteHeader() {
             </Link>
           ))}
         </nav>
-        <Button asChild size="sm">
-          <a href={`mailto:${siteConfig.supportEmail}`}>Contact us</a>
-        </Button>
+        <AccountLinks />
       </div>
     </header>
   );
