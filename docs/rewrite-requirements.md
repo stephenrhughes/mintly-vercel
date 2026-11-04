@@ -110,6 +110,8 @@ Everyone in a team shares **one API key**, the owner's. Usage, quotas and billin
 |---|---|---|
 | NAV-01 | The signed-in menu shows the user's email and links to: Tools, API Docs, Integration Guides, Release Notes, Monitor (usage), Settings (dashboard), and Sign Out. | `src/components/Navbars/DemoNavbar.js` |
 
+> **Replaced by §15.4.** Today the signed-in menu is the same top bar as the sales site, with the options in a hidden dropdown, so new users don't find them. The rewrite splits the sales site from the signed-in app (`APP-*`, `NAV-1x`).
+
 ---
 
 ## 4. Portal users: checking bank accounts and sort codes
@@ -516,6 +518,7 @@ These were the open questions in draft 1. [`rewrite-plan.md`](./rewrite-plan.md)
 | Q8 | Which console-only admin tasks are needed at launch? | **All of them:** admins and teams, API key operations, subscription changes, SSO tenant set-up |
 | Q9 | Are the APIs themselves in scope? | **No.** They stay on AWS, reached through one adapter module. |
 | Q10 | What happens to the marketing site? | **It moves into the same app and is redesigned**, keeping every URL |
+| Q11 | Should the signed-in app be separate from the sales pages? | **Yes:** a distinct layout with a permanent left-hand menu, on its own subdomain (`app.mintly.uk`). Same codebase and deployment. See §15.4. |
 
 ---
 
@@ -589,6 +592,72 @@ These came from reviewing the plan from the point of view of each role. The desi
 - a status page and developer announcements
 - a read-only support role for admins
 - internal notes on organisations
+
+### 15.4 Sales site and app are separate
+
+**Problem:** on the current site the sales pages and the signed-in portal share one top menu. After registering, users keep navigating with the top bar, the options for signed-in users sit in a hidden dropdown, and they never discover Tools, Usage, Team or Billing. The rewrite makes the two clearly different places.
+
+**Decision (Q11):** one codebase and one Vercel project, serving two hostnames:
+- **Sales site** at `www.mintly.uk` (marketing pages, pricing, public docs, the free checker).
+- **App** at `app.mintly.uk` (sign-in, the portal and the admin area).
+
+A subdomain helps for four reasons beyond the visual split: the session cookie can be limited to the app host, so the sales pages stay fully static and cacheable (`NFR-08`); marketing scripts (analytics, Meta Pixel, chat) can be kept out of the app; the app can be `noindex` with its own security headers; and users can tell from the address bar where they are. The cost is a sign-in hand-off between the two hosts (`APP-05`) and a one-off change for SSO customers, whose identity providers must be set up with the new app URL anyway (§12.1). The app host has to be fixed before those tenants are contacted.
+
+#### Hosts and routing
+
+| ID | Requirement |
+|---|---|
+| APP-01 | The sales site is served from `www.mintly.uk` and the app from `app.mintly.uk`, both from the same Next.js deployment. `proxy.ts` routes by hostname to two separate route groups, one per layout. A route that belongs to one host returns 404 on the other (for example `/pricing` on the app host). |
+| APP-02 | These live on the app host: `/sign-in`, `/sign-up`, `/forgot-password`, `/auth/callback`, `/join/[token]`, the whole portal and `/admin`. On the app host the portal paths have no `/app` prefix (`app.mintly.uk/tools`, `/usage`, `/subscription`, `/team`, `/billing`, `/account`); the prefix used in the plan (§8) is internal only. |
+| APP-03 | The session cookie is host-only on `app.mintly.uk`. The sales site never reads or sets a session, so its pages stay static. |
+| APP-04 | Every link from an email (verify, reset password, invite, trial approved, payment failed), from Stripe (checkout success and cancel, billing portal return) and from the SSO callback goes to the app host. |
+| APP-05 | Sales pages show **Sign in** and **Start free trial** while the visitor is anonymous. These links go to the app host and carry a `next` value (validated against an allow-list, to prevent open redirects) so that choosing a plan before signing up survives sign-up. |
+| APP-06 | When the app sets or clears a session it also sets or clears a non-sensitive "signed-in" hint cookie on `.mintly.uk` that holds no identity and no token. A client script on the sales site uses it to replace **Sign in** with **Open app**. Without the hint, the sales site works as for an anonymous visitor. |
+| APP-07 | Signing out returns the user to the sales home page. |
+| APP-08 | After sign-up, email verification, sign-in, accepting an invite and checkout, the user lands inside the app (Overview or Welcome), never on a sales page. |
+| APP-09 | The old portal URLs on `www` (`/dashboard`, `/tools`, `/monitor`, `/join`, `/admin`, `/success`) and the old sign-in routes permanently redirect to their app-host equivalents (extends plan §8). Sales URLs are unchanged (`WEB-02`). |
+| APP-10 | The app host sends `X-Robots-Tag: noindex`, has no sitemap, and its `robots.txt` disallows everything. Its security headers and CSP are separate from the sales site's (`WEB-04`). |
+| APP-11 | Marketing and chat scripts (Google Analytics marketing tags, Meta Pixel, Tawk.to, cookie banner for marketing cookies) load on the sales site only. The app uses product analytics and error reporting only, and has its own support link in the menu. This respects consent: the app needs no marketing consent. |
+| APP-12 | Preview and staging deployments work without extra DNS: hostname routing falls back to a path or query setting where the hostname isn't `www` or `app`, and local development works with `www.localhost` and `app.localhost`. Both hosts are configured in environment variables, not hard-coded. |
+
+#### Layouts
+
+| ID | Requirement |
+|---|---|
+| LAY-01 | **Three layouts only:** (1) the **sales layout**: marketing header, full-width content and a marketing footer; (2) the **auth layout**: a plain centred card with the logo, no menu, used for sign-in, sign-up, reset and invite pages; (3) the **app layout**: described below. Nothing is shared between 1 and 3 except design tokens (colours, type, spacing) and the logo. |
+| LAY-02 | The sales layout never shows signed-in links (Tools, Usage, Team, Billing). The only account link is **Sign in** or **Open app** (`APP-06`). |
+| LAY-03 | The app layout has a **permanent left-hand sidebar** and a top bar. It has no marketing header, no marketing footer, no promotional banners and no links to sales pages in the main navigation. |
+| LAY-04 | The app looks different from the sales site at a glance (neutral work-surface background, compact type, a product-style header), so users know they have moved from reading about Mintly to using it. |
+| LAY-05 | Pages in the app use one consistent page frame: page title, short description, a primary action on the right, then content. |
+| LAY-06 | The auth layout offers a single "Back to mintly.uk" link and nothing else. |
+
+#### The app menu
+
+| ID | Requirement |
+|---|---|
+| NAV-10 | On screens 1024px wide and above the sidebar is always visible and expanded by default. It can be collapsed to icons, and the choice is remembered per browser. The sidebar is never hidden behind a menu button on desktop. |
+| NAV-11 | On smaller screens the sidebar becomes a drawer, opened by a visible "Menu" button in the top bar (with text, not only an icon). Choosing an item closes it. |
+| NAV-12 | Every item has an icon and a text label. The current page is highlighted, and the current section is marked for assistive technology (`aria-current="page"`). |
+| NAV-13 | Menu items, grouped under headings: **Work:** Overview, Tools, Usage. **Developers:** API key and subscription details, Documentation, Integration guides, Release notes. **Organisation:** Team, Billing, Subscription (plan and change plan). **Account:** Account settings. See `NAV-14` for who sees what. |
+| NAV-14 | Items are shown by role (plan §3 matrix). Items a role may never use are not shown (Billing for Developers and Members; the key for Members). Items that are temporarily unavailable are **shown and disabled with a reason**, not hidden. For example, while a trial is pending review, Tools stays visible and opens the sandbox version, and the API key shows "Available once your account is approved". This makes the options and the next step visible. |
+| NAV-15 | The top of the sidebar shows the organisation name and its plan and status (Trial, 9 days left; Pending review; Active; Payment failed). It links to Subscription. |
+| NAV-16 | The bottom of the sidebar has the user menu: email, role, Account settings, Help (support address, and the feedback form), and **Sign out**. |
+| NAV-17 | Documentation, integration guides and release notes open **inside the app layout**, so the sidebar stays visible. Their content is shared with the public docs. The public copy on `www` remains the canonical one for search engines (`rel=canonical`), and the app copy is `noindex`. |
+| NAV-18 | A user with no subscription sees the same sidebar. **Overview** shows a "Choose a plan" step, and Subscription links to plans. Nothing is empty or dead-ended (`ACC-05`). |
+| NAV-19 | Mintly admins see an extra **Admin** group in the same sidebar (Reviews, Organisations, Reports, Plans, Offers, SSO, Admins, Feedback), with a distinct accent colour and an "Admin" label, so admin mode is never mistaken for the customer view. When an admin uses view-as (`ADM-13`), a persistent banner says whose portal is being shown and offers **Exit**. |
+| NAV-20 | A first-time user sees a short orientation on Overview: a checklist of next steps based on their state (get the key, try a check, invite a team member, add a billing contact), with each step linking to the right menu item. Steps disappear once done, and the checklist can be dismissed. |
+| NAV-21 | Badges on menu items for things that need attention: Reviews (pending count, admins), Team (open invites, owners), Subscription or Billing (payment failed). |
+| NAV-22 | The menu is keyboard-operable, has a "Skip to content" link, meets WCAG 2.2 AA contrast, and works at 200% zoom. |
+
+#### Verification
+
+| ID | Requirement |
+|---|---|
+| APPT-01 | Playwright journey: from the sales home, click **Start free trial**, register, verify, and land on the app Overview with the sidebar visible and no sales header or footer. |
+| APPT-02 | Playwright checks that the sidebar is visible without interaction on a desktop viewport and opens from a labelled button on a phone viewport. |
+| APPT-03 | Tests cover host routing (`APP-01`, `APP-09`), the `next` allow-list (`APP-05`), that the sales pages set no cookies (`APP-03`), and that the menu for each role shows exactly the items in `NAV-13` and `NAV-14`. |
+
+**Impact on the plan:** `rewrite-plan.md` §8 (routes), §2 (architecture: hostnames and `proxy.ts`), §3 (menu by role), the Supabase redirect URLs and SAML ACS URL, the Stripe return URLs, and phase 1 of delivery (§11) need updating to match. Plan §6.13 notes and the email templates refer to portal URLs that become app-host URLs.
 
 ---
 
