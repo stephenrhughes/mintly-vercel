@@ -17,9 +17,14 @@
     "db:stop": "supabase stop",
     "db:reset": "supabase db reset",
     "db:test": "supabase test db",
+    "db:push": "node scripts/supabase-remote.mjs push",
+    "db:push:dry-run": "node scripts/supabase-remote.mjs push --dry-run",
+    "db:migrations": "node scripts/supabase-remote.mjs list",
     "check": "npm run lint && npm run typecheck && npm run format:check && npm run test"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.7",
+    "@supabase/supabase-js": "^2.119.0",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.61.0",
@@ -27,6 +32,7 @@
     "radix-ui": "^1.8.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "server-only": "^0.0.1",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"
   },
