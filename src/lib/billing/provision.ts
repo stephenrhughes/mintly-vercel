@@ -206,6 +206,11 @@ async function sync(
     keyNoticeAt,
   });
 
+  // A scheduled downgrade has taken effect (PLAN-04).
+  if (isLiveStatus(record.status)) {
+    await store.completeScheduledChange(org.id, record.stripePriceId);
+  }
+
   const effects = await planEffects(store, {
     org,
     record,

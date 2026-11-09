@@ -85,15 +85,9 @@ export function PlanPicker({
                   : ""}
               . Starting another would charge you twice, so we haven&apos;t.
             </p>
-            <p className="mt-2">
-              Changing plan yourself is coming soon. Until then,{" "}
-              <a className="font-medium underline" href={contactHref}>
-                contact us
-              </a>{" "}
-              and we&apos;ll change it for you.
-            </p>
-            <Button asChild size="sm" variant="outline" className="mt-3">
-              <a href={subscriptionHref}>View your subscription</a>
+            <p className="mt-2">Change your existing plan instead. Your API key stays the same.</p>
+            <Button asChild size="sm" className="mt-3">
+              <a href={`${subscriptionHref}/change`}>Change plan</a>
             </Button>
           </AlertDescription>
         </Alert>

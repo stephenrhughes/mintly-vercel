@@ -61,6 +61,9 @@ export interface BillingStore {
     keyNoticeAt: Date | null;
   }): Promise<void>;
 
+  /** Marks a scheduled plan change done once Stripe has moved to its price (PLAN-04). */
+  completeScheduledChange(orgId: string, priceId: string): Promise<void>;
+
   getProfile(
     userId: string,
   ): Promise<(Person & { companyName: string | null; phone: string | null }) | null>;

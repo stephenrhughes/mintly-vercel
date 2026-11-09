@@ -76,16 +76,15 @@ async function Subscribe({ searchParams }: PageProps<"/app/subscribe">) {
           <CardHeader>
             <CardTitle>You already have a plan</CardTitle>
             <CardDescription>
-              See your plan and API key on the subscription page. Changing plan yourself is coming
-              soon; until then, contact us and we&apos;ll change it for you.
+              Change your plan, or start paying during a trial, without losing your API key.
             </CardDescription>
           </CardHeader>
           <CardFooter className="gap-3">
             <Button asChild>
-              <a href={appPath("/subscription")}>View subscription</a>
+              <a href={appPath("/subscription/change")}>Change plan</a>
             </Button>
             <Button asChild variant="outline">
-              <a href={contactHref}>Contact us</a>
+              <a href={appPath("/subscription")}>View subscription</a>
             </Button>
           </CardFooter>
         </Card>

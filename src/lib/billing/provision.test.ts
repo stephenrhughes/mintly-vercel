@@ -339,6 +339,17 @@ describe("lifecycle", () => {
     });
   });
 
+  it("completes a scheduled downgrade when Stripe moves to its price (PLAN-04)", async () => {
+    const [org] = [...t.store.orgs.values()];
+    t.store.scheduledChanges.set(org.id, { toPriceId: "price_starter", status: "scheduled" });
+    t.subs.set("sub_1", subscription({ price: price({ id: "price_other" }) }));
+    await handleStripeEvent(t.deps, subscriptionEvent("evt_other"));
+    expect(t.store.scheduledChanges.get(org.id)?.status).toBe("scheduled");
+    t.subs.set("sub_1", subscription({ price: price({ id: "price_starter" }) }));
+    await handleStripeEvent(t.deps, subscriptionEvent("evt_starter"));
+    expect(t.store.scheduledChanges.get(org.id)?.status).toBe("done");
+  });
+
   it("records a requested cancellation and removes the owner from Brevo (PROV-06)", async () => {
     t.subs.set("sub_1", trial({ cancel_at_period_end: true, cancel_at: 1_800_000_000 }));
     const outcome = await handleStripeEvent(t.deps, subscriptionEvent("evt_cancel"));

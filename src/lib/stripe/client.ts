@@ -22,6 +22,22 @@ export function isAllowedStripeKey(key: string, env: Env = process.env): boolean
   return true;
 }
 
+/**
+ * A local Stripe mock to send requests to instead, for development and
+ * tests only (STRIPE_API_URL, such as http://localhost:12111). Ignored on
+ * production.
+ */
+export function mockApiConfig(env: Env = process.env) {
+  const value = env.STRIPE_API_URL?.trim();
+  if (!value || getDeploymentEnvironment(env) === "production") return {};
+  const url = new URL(value);
+  return {
+    host: url.hostname,
+    port: url.port ? Number(url.port) : undefined,
+    protocol: url.protocol.replace(":", "") as "http" | "https",
+  };
+}
+
 let cached: { key: string; client: Stripe } | null = null;
 
 /** The Stripe client, or null when Stripe isn't configured on this deployment. */
@@ -40,6 +56,7 @@ export function getStripe(env: Env = process.env): Stripe | null {
         apiVersion: "2026-10-28.endive",
         appInfo: { name: "mintly-app" },
         maxNetworkRetries: 2,
+        ...mockApiConfig(env),
       }),
     };
   }

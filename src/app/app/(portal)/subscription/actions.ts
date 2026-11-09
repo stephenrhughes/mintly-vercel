@@ -6,6 +6,8 @@ import { redirect } from "next/navigation";
 import { requireUser } from "@/lib/auth/session";
 import { getKeyValue } from "@/lib/aws/apiKeys";
 import { canManageBilling, canSeeKey } from "@/lib/billing/permissions";
+import { canRotateKey, rotateKey } from "@/lib/billing/rotate-key";
+import { rotateKeyDeps } from "@/lib/billing/rotate-key-server";
 import { getOrgSubscriptions } from "@/lib/billing/queries";
 import { describeSubscription } from "@/lib/billing/status";
 import { appUrl } from "@/lib/hosts";
@@ -81,4 +83,36 @@ export async function dismissKeyNotice(): Promise<void> {
     .is("key_notice_dismissed_at", null);
   if (error) console.error("dismissing the key notice failed", error.message);
   refresh();
+}
+
+export type RotateState = { error?: string; message?: string };
+
+// KEY-01: owners and developers replace the key, now or with a 24-hour overlap.
+export async function rotateApiKey(_state: RotateState, formData: FormData): Promise<RotateState> {
+  const user = await requireUser("/subscription");
+  const membership = user.membership;
+  if (!membership || !canRotateKey(membership)) return { error: "You can't rotate the API key." };
+  if (formData.get("confirm") !== "on") return { error: "Tick the box to confirm." };
+  const when = formData.get("when") === "now" ? "now" : "overlap";
+  try {
+    const result = await rotateKey(
+      rotateKeyDeps(),
+      {
+        id: user.id,
+        email: user.email,
+        role: membership.role,
+        orgId: membership.orgId,
+        orgName: membership.orgName,
+        reviewStatus: membership.reviewStatus,
+      },
+      when,
+    );
+    refresh();
+    return result.ok ? { message: result.message } : { error: result.error };
+  } catch (error) {
+    console.error("key rotation failed", error);
+    return {
+      error: `We couldn't replace your key. Your current key still works. Email ${siteConfig.supportEmail} if this keeps happening.`,
+    };
+  }
 }

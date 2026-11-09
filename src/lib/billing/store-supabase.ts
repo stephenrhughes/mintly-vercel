@@ -175,6 +175,16 @@ export function createSupabaseBillingStore(
       if (error) fail("saving the subscription", error);
     },
 
+    async completeScheduledChange(orgId, priceId) {
+      const { error } = await db
+        .from("plan_changes")
+        .update({ status: "done" })
+        .eq("org_id", orgId)
+        .eq("status", "scheduled")
+        .eq("to_price_id", priceId);
+      if (error) fail("completing the scheduled plan change", error);
+    },
+
     async getProfile(userId) {
       const { data, error } = await db
         .from("profiles")

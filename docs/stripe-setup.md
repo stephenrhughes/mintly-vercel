@@ -23,6 +23,7 @@ The app finds prices by metadata, never by hard-coded ID (`ADM-10`):
 | `usagePlanId` | `abc123` | The API Gateway usage plan for paid subscriptions |
 | `trialUsagePlanId` | `def456` | The usage plan while trialing |
 | `maxTeamSize` | `5` | Seats the price includes, owner included (`PROV-09`) |
+| `custom` | `true` | A price made for one customer. Its owner can't change plan themselves and is asked to contact Mintly (`PLAN-10`). Legacy prices (no `tier`, not `custom`) can move to a current plan. |
 
 A price without the usage plan the subscription needs makes the webhook return 500, so Stripe retries once the metadata is fixed (`PROV-10`).
 
@@ -52,7 +53,7 @@ stripe listen --forward-to localhost:3000/api/webhooks/stripe
 
 ## 4. The billing portal
 
-Settings → Billing → Customer portal: allow updating payment methods and billing details, viewing invoices, and cancelling at the end of the period. Leave **switching plans off**: plan changes go through the app (plan §6.12, phase 2c).
+Settings → Billing → Customer portal: allow updating payment methods and billing details, viewing invoices, and cancelling at the end of the period. Leave **switching plans off**: owners change plan at `/subscription/change` (plan §6.12), which updates the subscription directly, previews every charge with Stripe's invoice preview, and schedules downgrades with a subscription schedule.
 
 Under Settings → Public details, set the terms of service URL, which Checkout asks customers to accept.
 
@@ -78,7 +79,7 @@ New trial organisations wait for an admin's approval at `/admin/reviews` (plan �
 
 | Variable | Notes |
 |---|---|
-| `CRON_SECRET` | Vercel sends it to `/api/cron/reminders`, which `vercel.json` schedules hourly. It reminds admins about trials waiting more than 4 working hours and declines trials pending for 7 days. |
+| `CRON_SECRET` | Vercel sends it to `/api/cron/reminders`, which `vercel.json` schedules hourly. It reminds admins about trials waiting more than 4 working hours, declines trials pending for 7 days, emails trial reminders 7, 3 and 1 days before a trial ends (`PLAN-08`), and turns off rotated keys once their 24-hour overlap ends (`KEY-01`). |
 | `IP_HASH_SECRET` | Hashes sign-up IP addresses so repeat trials can be matched without storing the address. Required on production. |
 
 Trusted domains (approved automatically) and blocked domains (sign-up refused) are managed at `/admin/reviews/domains`. Before launch, seed the trusted list from current paying customers' domains, after checking it by hand (plan §10.1 step 10).

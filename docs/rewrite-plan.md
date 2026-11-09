@@ -618,7 +618,7 @@ Phase 6 can run alongside phases 2–5 because it doesn't depend on them.
 Phase 2 is delivered in three parts:
 - **2a: provisioning.** Plans, checkout, the Stripe webhook, the AWS adapter, key provisioning, the subscription page, the billing portal, Resend and Brevo.
 - **2b: trial review.** The pending state, review queue and actions, trusted and blocked domains, auto-approve rules, and the hourly reminders job. The SSO-domain rule waits for `sso_domains` (phase 4), and sandbox mode on the Tools page for the Tools page (phase 3).
-- **2c: Change plan and key rotation.**
+- **2c: Change plan and key rotation.** `/subscription/change` for owners (trial switch, start paid, upgrade, scheduled downgrade, with Stripe's preview), trial-ending reminders, and key rotation for owners and developers. The admin version of Change plan (PLAN-09) arrives with the organisation detail page in phase 5; usage-based recommendations and warnings arrive with the usage sync in phase 3.
 
 ---
 

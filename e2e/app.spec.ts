@@ -148,3 +148,12 @@ test("the review queue needs a signed-in admin (plan §6.8)", async ({ page }) =
   await page.goto("/app/admin/reviews/domains");
   await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fadmin%2Freviews%2Fdomains$/);
 });
+
+test("changing plan needs a signed-in user (PLAN-01)", async ({ page }) => {
+  await page.goto("/app/subscription/change?tier=professional&interval=annual");
+  await expect(page).toHaveURL(
+    /\/app\/sign-in\?next=%2Fsubscription%2Fchange%3Ftier%3Dprofessional%26interval%3Dannual$/,
+  );
+  await page.goto("/app/subscription/change/card-added?session_id=cs_test_1");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fsubscription%2Fchange%2Fcard-added/);
+});

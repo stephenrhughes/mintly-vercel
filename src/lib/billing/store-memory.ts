@@ -112,6 +112,13 @@ export class MemoryBillingStore implements BillingStore {
     });
   }
 
+  scheduledChanges = new Map<string, { toPriceId: string; status: "scheduled" | "done" }>();
+
+  async completeScheduledChange(orgId: string, priceId: string) {
+    const change = this.scheduledChanges.get(orgId);
+    if (change?.status === "scheduled" && change.toPriceId === priceId) change.status = "done";
+  }
+
   async getProfile(userId: string) {
     return this.users.get(userId) ?? null;
   }

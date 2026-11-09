@@ -63,6 +63,8 @@ export type PriceMeta = {
   maxTeamSize: number | null;
   tier: string | null;
   interval: string | null;
+  /** A price made for one customer, which they can't change themselves (PLAN-10). */
+  custom: boolean;
 };
 
 /** The metadata the app relies on, read from a Stripe price (ADM-10). */
@@ -76,6 +78,7 @@ export function priceMeta(price: PriceLike | null | undefined): PriceMeta {
     maxTeamSize: parseSeats(metadata.maxTeamSize) ?? null,
     tier: text("tier"),
     interval: text("interval"),
+    custom: text("custom") === "true",
   };
 }
 

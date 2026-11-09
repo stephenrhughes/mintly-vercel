@@ -1,8 +1,16 @@
-import { CircleAlert, Download, ExternalLink, KeyRound } from "lucide-react";
+import {
+  CalendarClock,
+  CircleAlert,
+  CircleCheck,
+  Download,
+  ExternalLink,
+  KeyRound,
+} from "lucide-react";
 import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PageHeader } from "@/components/app/page-header";
+import { TrialEndingBanner, trialEndsSoon } from "@/components/app/trial-ending-banner";
 import { SubmitButton } from "@/components/forms/submit-button";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
@@ -17,7 +25,9 @@ import {
 } from "@/components/ui/card";
 import { type AppUser, requireUser } from "@/lib/auth/session";
 import { canManageBilling, canSeeKey } from "@/lib/billing/permissions";
+import { longDate } from "@/lib/billing/format";
 import { getOrgSubscriptions, planNameFor } from "@/lib/billing/queries";
+import { createClient } from "@/lib/supabase/server";
 import { seatLimit } from "@/lib/billing/seats";
 import {
   describeSubscription,
@@ -29,6 +39,8 @@ import { appPath } from "@/lib/hosts";
 import { siteConfig } from "@/lib/site";
 
 import { dismissKeyNotice } from "./actions";
+import { cancelPlanChange } from "./change/actions";
+import { RotateKeyForm } from "./rotate-key-form";
 import { ApiKey } from "./api-key";
 import { BillingPortalButton } from "./billing-portal-button";
 
@@ -36,13 +48,22 @@ export const metadata: Metadata = { title: "Subscription" };
 
 const title = "Subscription";
 
-export default function SubscriptionPage() {
+export default function SubscriptionPage(props: PageProps<"/app/subscription">) {
   return (
     <Suspense fallback={<PageHeader title={title} />}>
-      <Subscription />
+      <Subscription {...props} />
     </Suspense>
   );
 }
+
+// After a plan change (plan §6.12) the owner lands back here.
+const changedText: Record<string, string> = {
+  trial_switch: "Your trial is now on your new plan. Your trial end date hasn't changed.",
+  start_paid: "Your paid plan has started. Thank you!",
+  upgrade: "Your plan has been upgraded.",
+  downgrade_scheduled: "Your plan will change at the end of this billing period.",
+  cancelled: "The scheduled change is cancelled. Your plan stays as it is.",
+};
 
 const toneVariant: Record<StatusTone, "default" | "secondary" | "outline"> = {
   good: "default",
@@ -52,9 +73,10 @@ const toneVariant: Record<StatusTone, "default" | "secondary" | "outline"> = {
 
 // SUB-01 to SUB-06, BILL-01, BILL-02, BILL-08: the plan, its status, the API
 // key for owners and developers, and billing for the owner.
-async function Subscription() {
-  const user = await requireUser("/subscription");
+async function Subscription({ searchParams }: PageProps<"/app/subscription">) {
+  const [user, params] = await Promise.all([requireUser("/subscription"), searchParams]);
   const membership = user.membership;
+  const changed = typeof params.changed === "string" ? changedText[params.changed] : undefined;
 
   if (!membership) {
     return (
@@ -81,6 +103,12 @@ async function Subscription() {
   const names = await Promise.all(current.map((sub) => planNameFor(sub.stripePriceId)));
   const bankChecker = current.find((sub) => sub.product === "bank_checker");
   const ownerCanResubscribe = membership.role === "owner" && (!bankChecker || bankChecker.expired);
+  const scheduled = membership.role === "owner" ? await scheduledChange(membership.orgId) : null;
+  const showTrialBanner =
+    bankChecker?.trialing &&
+    !bankChecker.expired &&
+    membership.reviewStatus === "approved" &&
+    trialEndsSoon(bankChecker.trialEnd);
 
   return (
     <div className="grid gap-8">
@@ -89,6 +117,38 @@ async function Subscription() {
         description={`${membership.orgName}'s plan and API key.`}
         action={canManageBilling(membership) && current.length > 0 ? <BillingPortalButton /> : null}
       />
+
+      {changed ? (
+        <Alert variant="success">
+          <CircleCheck aria-hidden />
+          <AlertDescription className="text-secondary-foreground">{changed}</AlertDescription>
+        </Alert>
+      ) : null}
+
+      {showTrialBanner && bankChecker?.trialEnd ? (
+        <TrialEndingBanner
+          trialEnd={bankChecker.trialEnd}
+          isOwner={membership.role === "owner"}
+          changePlanHref={appPath("/subscription/change")}
+        />
+      ) : null}
+
+      {scheduled ? (
+        // PLAN-04: a downgrade waits for the end of the period, and can be cancelled.
+        <Alert>
+          <CalendarClock aria-hidden />
+          <AlertTitle>
+            Your plan changes to the {scheduled.planName} on {longDate(scheduled.effectiveAt)}
+          </AlertTitle>
+          <AlertDescription>
+            <form action={cancelPlanChange} className="mt-1">
+              <SubmitButton size="sm" variant="outline" pendingLabel="Cancelling…">
+                Cancel this change
+              </SubmitButton>
+            </form>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {current.some(showKeyNotice) && canSeeKey(membership) ? (
         // BILL-08: a returning customer's key has changed.
@@ -149,7 +209,38 @@ async function Subscription() {
   );
 }
 
-function SubscriptionCard({
+async function scheduledChange(orgId: string) {
+  // Owners read their organisation's plan changes through RLS.
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("plan_changes")
+    .select("to_price_id, effective_at")
+    .eq("org_id", orgId)
+    .eq("status", "scheduled")
+    .maybeSingle<{ to_price_id: string; effective_at: string }>();
+  if (!data) return null;
+  return {
+    planName: await planNameFor(data.to_price_id),
+    effectiveAt: new Date(data.effective_at),
+  };
+}
+
+/** A key from a rotation that still works for a while (KEY-01). */
+async function retiringKey(orgId: string): Promise<Date | null> {
+  const supabase = await createClient();
+  const { data } = await supabase
+    .from("api_keys")
+    .select("retire_at")
+    .eq("org_id", orgId)
+    .eq("enabled", true)
+    .gt("retire_at", new Date().toISOString())
+    .order("retire_at", { ascending: false })
+    .limit(1)
+    .maybeSingle<{ retire_at: string }>();
+  return data ? new Date(data.retire_at) : null;
+}
+
+async function SubscriptionCard({
   sub,
   name,
   user,
@@ -186,9 +277,24 @@ function SubscriptionCard({
           <h3 id={`key-${sub.id}`} className="font-medium">
             API key
           </h3>
-          <KeySection sub={sub} active={status.active} membership={membership} />
+          <KeySection
+            sub={sub}
+            active={status.active}
+            membership={membership}
+            retiringUntil={status.active ? await retiringKey(membership.orgId) : null}
+          />
         </section>
       </CardContent>
+      {canManageBilling(membership) && sub.product === "bank_checker" && !sub.expired ? (
+        // PLAN-01: the owner changes plan themselves.
+        <CardFooter className="border-t">
+          <Button asChild variant="outline">
+            <a href={appPath("/subscription/change")}>
+              {sub.trialing ? "Change plan or start paying" : "Change plan"}
+            </a>
+          </Button>
+        </CardFooter>
+      ) : null}
     </Card>
   );
 }
@@ -197,10 +303,12 @@ function KeySection({
   sub,
   active,
   membership,
+  retiringUntil,
 }: {
   sub: SubscriptionView;
   active: boolean;
   membership: NonNullable<AppUser["membership"]>;
+  retiringUntil: Date | null;
 }) {
   if (membership.role === "member") {
     return (
@@ -237,14 +345,25 @@ function KeySection({
   return (
     <>
       <ApiKey />
+      {retiringUntil ? (
+        <p className="text-sm text-muted-foreground">
+          Your previous key keeps working until{" "}
+          {retiringUntil.toLocaleString("en-GB", {
+            dateStyle: "long",
+            timeStyle: "short",
+            timeZone: "Europe/London",
+          })}
+          .
+        </p>
+      ) : null}
       <Alert>
         <CircleAlert aria-hidden />
         <AlertDescription>
           Keep your key secret. Store it in a secrets manager, never in code or a browser, and send
-          it in the <code>x-api-key</code> header. If it leaks, email {siteConfig.supportEmail} and
-          we&apos;ll replace it.
+          it in the <code>x-api-key</code> header. If it leaks, rotate it below.
         </AlertDescription>
       </Alert>
+      <RotateKeyForm />
     </>
   );
 }
@@ -300,8 +419,9 @@ function BillingTerms() {
         doesn&apos;t refund the current period.
       </p>
       <p>
-        To change plan or end a trial early, email {siteConfig.supportEmail}. Changing plan yourself
-        is coming soon.
+        Upgrades take effect straight away and are charged for the rest of the billing period, less
+        what&apos;s left of your current plan. Downgrades take effect at the end of the period, with
+        no refund.
       </p>
     </section>
   );

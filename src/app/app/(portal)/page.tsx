@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { PageHeader } from "@/components/app/page-header";
+import { TrialEndingBanner, trialEndsSoon } from "@/components/app/trial-ending-banner";
 import {
   AccountUnavailableNotice,
   PendingReviewNotice,
@@ -92,6 +93,17 @@ async function Overview({ searchParams }: PageProps<"/app">) {
 
       {membership?.reviewStatus === "pending_review" ? (
         <PendingReviewNotice orgName={membership.orgName} />
+      ) : null}
+      {membership?.reviewStatus === "approved" &&
+      sub?.trialing &&
+      !sub.expired &&
+      trialEndsSoon(sub.trialEnd) &&
+      sub.trialEnd ? (
+        <TrialEndingBanner
+          trialEnd={sub.trialEnd}
+          isOwner={membership.role === "owner"}
+          changePlanHref={appPath("/subscription/change")}
+        />
       ) : null}
       {membership?.reviewStatus === "rejected" || membership?.reviewStatus === "suspended" ? (
         <AccountUnavailableNotice suspended={membership.reviewStatus === "suspended"} />
