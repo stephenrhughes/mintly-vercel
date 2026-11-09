@@ -22,6 +22,7 @@ import { syncSubscription } from "./provision";
 import { provisionDeps } from "./server";
 import { priceMeta, subscriptionItem } from "./subscription-record";
 import type { ReviewStatus } from "@/lib/nav";
+import { projectedMonthlyChecks } from "@/lib/usage/queries";
 
 // Wires the plan-change service (plan-change.ts) to Stripe, Supabase and email.
 
@@ -307,8 +308,11 @@ export async function loadChangeContext(orgId: string): Promise<ChangeContext | 
     subscriptionId: sub.stripe_subscription_id,
     current,
     team: { seatsUsed: Math.max(1, count ?? 1), extraUsers: sub.extra_users },
-    // Usage arrives with the nightly sync in phase 3.
-    monthlyChecks: null,
+    // PLAN-06, PLAN-07: the recent rate from the nightly usage sync.
+    monthlyChecks: await projectedMonthlyChecks(orgId).catch((error: unknown) => {
+      console.error("reading usage for the plan change failed", error);
+      return null;
+    }),
   };
 }
 
