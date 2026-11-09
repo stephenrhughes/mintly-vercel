@@ -121,8 +121,13 @@ test("sign-up names the plan picked on the pricing page (BUY-02)", async ({ page
   ).toBeVisible();
 
   // A made-up plan is ignored.
+  // (The streamed card briefly sits next to its fallback, which has the same text.)
   await page.goto("/app/sign-up?next=%2Fsubscribe%3Fplan%3Dconstructor");
-  await expect(page.getByText("Start a 14-day free trial. No card needed.")).toBeVisible();
+  await expect(page.getByLabel("Work email")).toBeVisible();
+  await expect(
+    page.getByText("Start a 14-day free trial. No card needed.").filter({ visible: true }).first(),
+  ).toBeVisible();
+  await expect(page.getByText(/You're starting a free trial/)).toHaveCount(0);
 });
 
 test("the Stripe webhook refuses unsigned requests (PROV-10)", async ({ request }) => {
