@@ -3,6 +3,8 @@ import Link from "next/link";
 import { Suspense } from "react";
 
 import { AuthCard } from "@/components/auth/auth-card";
+import { intentFromNext } from "@/lib/billing/plan-intent";
+import { PLANS } from "@/lib/billing/plans";
 import { appPath, safeNextPath } from "@/lib/hosts";
 import { legalDocuments } from "@/lib/legal";
 
@@ -18,11 +20,16 @@ async function SignUp({ searchParams }: PageProps<"/app/sign-up">) {
   // Plan intent from the pricing page survives sign-up (BUY-02, APP-05).
   const next = safeNextPath(typeof params.next === "string" ? params.next : null);
   const nextQuery = next === "/" ? "" : `?next=${encodeURIComponent(next)}`;
+  const intent = intentFromNext(next);
 
   return (
     <AuthCard
       title={title}
-      description={description}
+      description={
+        intent
+          ? `You're starting a free trial of the ${PLANS[intent.tier].name}. No card needed.`
+          : description
+      }
       footer={
         <>
           Already have an account?{" "}

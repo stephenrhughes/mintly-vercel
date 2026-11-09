@@ -86,6 +86,15 @@ describe("buildNav availability", () => {
     expect(find(ctx, "api-key")?.disabledReason).toBe("Your account is suspended");
   });
 
+  it("opens the subscription, plans and API key now that phase 2a has shipped them", () => {
+    expect(find(approved("owner"), "subscription")?.disabledReason).toBeUndefined();
+    expect(find(approved("developer"), "api-key")?.disabledReason).toBeUndefined();
+    const noOrg: NavContext = { role: null, reviewStatus: null, isMintlyAdmin: false };
+    expect(find(noOrg, "subscription")?.disabledReason).toBeUndefined();
+    // Billing contacts arrive in phase 7.
+    expect(find(approved("owner"), "billing")?.disabledReason).toBe("Coming soon");
+  });
+
   it("links docs to the public site", () => {
     expect(find(approved("member"), "docs")).toMatchObject({
       external: true,

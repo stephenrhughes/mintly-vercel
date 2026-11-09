@@ -7,7 +7,11 @@ import { PageHeader } from "@/components/app/page-header";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 import { requireUser } from "@/lib/auth/session";
+import { canSeeKey } from "@/lib/billing/permissions";
+import { getOrgSubscriptions, planNameFor } from "@/lib/billing/queries";
+import { describeSubscription } from "@/lib/billing/status";
 import { appPath } from "@/lib/hosts";
 import { orgStatusLabel } from "@/lib/nav";
 import { siteConfig } from "@/lib/site";
@@ -25,17 +29,31 @@ export default function OverviewPage(props: PageProps<"/app">) {
 async function Overview({ searchParams }: PageProps<"/app">) {
   const [user, params] = await Promise.all([requireUser("/"), searchParams]);
   const membership = user.membership;
+  const subscriptions = membership ? await getOrgSubscriptions(membership.orgId) : null;
+  const sub =
+    subscriptions?.current.find((s) => s.product === "bank_checker") ?? subscriptions?.current[0];
+  const status = sub ? describeSubscription(sub) : null;
+  const planName = sub ? await planNameFor(sub.stripePriceId) : null;
 
-  // A short checklist of next steps (NAV-20). Later phases add the key,
-  // a first check, a team member and a billing contact.
+  // A short checklist of next steps (NAV-20). Later phases add a first
+  // check, a team member and a billing contact.
   const steps = [
     {
-      done: Boolean(membership),
+      done: Boolean(sub && !sub.expired),
       title: "Choose a plan",
       description: "Start a 14-day free trial of the Bank Account Checker. No card needed.",
-      href: `${siteConfig.canonicalUrl}/pricing`,
-      external: true,
+      href: appPath("/subscribe"),
     },
+    ...(canSeeKey(membership)
+      ? [
+          {
+            done: Boolean(status?.active),
+            title: "Get your API key",
+            description: "Copy your key from the subscription page and make your first call.",
+            href: appPath("/subscription#api-key"),
+          },
+        ]
+      : []),
     {
       done: Boolean(user.firstName && user.lastName && user.companyName),
       title: "Complete your profile",
@@ -72,6 +90,22 @@ async function Overview({ searchParams }: PageProps<"/app">) {
             <CardTitle>{membership.orgName}</CardTitle>
             <CardDescription>{orgStatusLabel(membership.reviewStatus)}</CardDescription>
           </CardHeader>
+          {sub && status ? (
+            <CardContent className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="flex flex-wrap items-center gap-2 font-medium">
+                  {planName}{" "}
+                  <Badge variant={status.active ? "default" : "outline"}>{status.label}</Badge>
+                </p>
+                {status.dateLine ? (
+                  <p className="text-sm text-muted-foreground">{status.dateLine}</p>
+                ) : null}
+              </div>
+              <Button asChild variant="outline" size="sm">
+                <a href={appPath("/subscription")}>View subscription</a>
+              </Button>
+            </CardContent>
+          ) : null}
         </Card>
       ) : (
         // ACC-05, NAV-18: nothing is a dead end without a subscription.
@@ -85,7 +119,7 @@ async function Overview({ searchParams }: PageProps<"/app">) {
           </CardHeader>
           <CardContent className="flex flex-wrap gap-3">
             <Button asChild>
-              <a href={`${siteConfig.canonicalUrl}/pricing`} target="_blank" rel="noreferrer">
+              <a href={appPath("/subscribe")}>
                 See plans <ArrowRight />
               </a>
             </Button>
@@ -105,7 +139,6 @@ async function Overview({ searchParams }: PageProps<"/app">) {
             <li key={step.title}>
               <Link
                 href={step.href}
-                {...(step.external ? { target: "_blank", rel: "noreferrer" } : {})}
                 className="flex items-start gap-3 rounded-lg border bg-card p-4 hover:border-primary/40"
               >
                 {step.done ? (

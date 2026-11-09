@@ -1,5 +1,7 @@
 import type { EmailOtpType } from "@supabase/supabase-js";
-import { type NextRequest, NextResponse } from "next/server";
+import { after, type NextRequest, NextResponse } from "next/server";
+
+import { notifyAdminOfNewUser } from "@/lib/auth/new-user-notice";
 
 import { appPath, safeNextPath } from "@/lib/hosts";
 import { getSupabaseConfig } from "@/lib/supabase/config";
@@ -31,12 +33,24 @@ export async function GET(request: NextRequest) {
   const type = searchParams.get("type") as EmailOtpType | null;
 
   let ok = false;
+  let userId: string | null = null;
   if (code) {
-    ok = !(await supabase.auth.exchangeCodeForSession(code)).error;
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    ok = !error;
+    userId = data.user?.id ?? null;
   } else if (tokenHash && type && otpTypes.has(type)) {
-    ok = !(await supabase.auth.verifyOtp({ token_hash: tokenHash, type })).error;
+    const { data, error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
+    ok = !error;
+    userId = type === "signup" || type === "email" ? (data.user?.id ?? null) : null;
   }
   if (!ok) return failure;
+
+  // AUTH-07: a confirmed sign-up. Sent once per user, so a recovery or
+  // later link that lands here doesn't repeat it.
+  if (userId && type !== "recovery") {
+    const id = userId;
+    after(() => notifyAdminOfNewUser(id));
+  }
 
   return NextResponse.redirect(new URL(appPath(next), request.url));
 }

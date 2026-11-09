@@ -98,3 +98,35 @@ test("the sales site shows Open app when the signed-in hint is set (APP-06)", as
     "/app",
   );
 });
+
+test("billing pages need a signed-in user, and keep the plan chosen (BUY-02, SUB-05)", async ({
+  page,
+}) => {
+  await page.goto("/app/subscribe?plan=professional&interval=annual");
+  await expect(page).toHaveURL(
+    /\/app\/sign-in\?next=%2Fsubscribe%3Fplan%3Dprofessional%26interval%3Dannual$/,
+  );
+
+  await page.goto("/app/subscription");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fsubscription$/);
+
+  await page.goto("/app/welcome?session_id=cs_test_123");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fwelcome/);
+});
+
+test("sign-up names the plan picked on the pricing page (BUY-02)", async ({ page }) => {
+  await page.goto("/app/sign-up?next=%2Fsubscribe%3Fplan%3DstandardPlus");
+  await expect(
+    page.getByText("You're starting a free trial of the Standard Plus Plan."),
+  ).toBeVisible();
+
+  // A made-up plan is ignored.
+  await page.goto("/app/sign-up?next=%2Fsubscribe%3Fplan%3Dconstructor");
+  await expect(page.getByText("Start a 14-day free trial. No card needed.")).toBeVisible();
+});
+
+test("the Stripe webhook refuses unsigned requests (PROV-10)", async ({ request }) => {
+  const response = await request.post("/api/webhooks/stripe", { data: "{}" });
+  // 503 without Stripe configured (as in CI), 400 for a missing signature otherwise.
+  expect([400, 503]).toContain(response.status());
+});

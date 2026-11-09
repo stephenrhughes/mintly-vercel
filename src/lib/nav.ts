@@ -53,8 +53,6 @@ export type NavGroup = { id: string; label: string; items: NavItem[]; admin?: bo
 const notYetAvailable = new Set([
   "/tools",
   "/usage",
-  "/subscription",
-  "/subscribe",
   "/team",
   "/billing",
   "/admin/reviews",
