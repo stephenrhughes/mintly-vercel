@@ -36,3 +36,11 @@ export interface UsagePlanStore {
   listUsagePlans(): Promise<UsagePlanInfo[]>;
   getUsagePlan(id: string): Promise<UsagePlanInfo | null>;
 }
+
+/** One day of a key's usage, from DynamoDB ApiDailyUsageStats (MON-05). */
+export type DailyStat = { date: string; success: number; notFound: number };
+
+export interface UsageStatsStore {
+  /** Days with usage for the key, from and to inclusive (YYYY-MM-DD, UTC). */
+  readDailyStats(keyId: string, from: string, to: string): Promise<DailyStat[]>;
+}

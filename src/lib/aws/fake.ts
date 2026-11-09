@@ -7,7 +7,14 @@ import { randomUUID } from "node:crypto";
 
 import { getDeploymentEnvironment } from "@/lib/site";
 
-import type { ApiKeyInfo, ApiKeyStore, UsagePlanInfo, UsagePlanStore } from "./types";
+import type {
+  ApiKeyInfo,
+  ApiKeyStore,
+  DailyStat,
+  UsagePlanInfo,
+  UsagePlanStore,
+  UsageStatsStore,
+} from "./types";
 
 type FakeKey = ApiKeyInfo & { value: string; plans: Set<string>; tags: Record<string, string> };
 
@@ -110,6 +117,49 @@ export function createFakeUsagePlanStore(): UsagePlanStore {
     async getUsagePlan(id) {
       assertNotProduction();
       return plan(id);
+    },
+  };
+}
+
+/** A small, stable hash, so the fake's numbers are the same on every run. */
+function hash(text: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < text.length; i++) {
+    h ^= text.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return h >>> 0;
+}
+
+const DAY_MS = 24 * 60 * 60 * 1000;
+
+/**
+ * Made-up daily usage for any key, so local usage pages show a believable
+ * chart: about the last 120 days, quieter at weekends. The same key and
+ * day always give the same numbers.
+ */
+export function fakeDailyStats(keyId: string, from: string, to: string, today: Date): DailyStat[] {
+  const stats: DailyStat[] = [];
+  const firstActive = today.getTime() - 120 * DAY_MS;
+  const start = Math.max(Date.parse(`${from}T00:00:00Z`), firstActive);
+  const end = Math.min(Date.parse(`${to}T00:00:00Z`), today.getTime());
+  for (let t = start - (start % DAY_MS); t <= end; t += DAY_MS) {
+    const date = new Date(t).toISOString().slice(0, 10);
+    const h = hash(`${keyId}:${date}`);
+    const weekend = [0, 6].includes(new Date(t).getUTCDay());
+    if (h % 7 === 0) continue; // some days have no traffic
+    const success = (h % 40) + (weekend ? 0 : 15);
+    const notFound = (h >>> 8) % (weekend ? 3 : 7);
+    stats.push({ date, success, notFound });
+  }
+  return stats;
+}
+
+export function createFakeUsageStatsStore(): UsageStatsStore {
+  return {
+    async readDailyStats(keyId, from, to) {
+      assertNotProduction();
+      return fakeDailyStats(keyId, from, to, new Date());
     },
   };
 }
