@@ -74,10 +74,18 @@ describe("buildNav availability", () => {
     expect(find(ctx, "account")?.disabledReason).toBeUndefined();
   });
 
-  it("keeps tools but not the key while pending review (NAV-14)", () => {
+  it("keeps tools (in sandbox mode) but not the key while pending review (NAV-14, APPR-03)", () => {
     const ctx: NavContext = { role: "owner", reviewStatus: "pending_review", isMintlyAdmin: false };
     expect(find(ctx, "api-key")?.disabledReason).toBe("Available once your account is approved");
-    expect(find(ctx, "tools")?.disabledReason).not.toBe("Choose a plan first");
+    expect(find(ctx, "tools")?.disabledReason).toBeUndefined();
+    expect(find(ctx, "usage")?.disabledReason).toBeUndefined();
+  });
+
+  it("opens Tools and Usage to every role now that phase 3 has shipped them", () => {
+    for (const role of ["owner", "developer", "member"] as const) {
+      expect(find(approved(role), "tools")?.disabledReason).toBeUndefined();
+      expect(find(approved(role), "usage")?.disabledReason).toBeUndefined();
+    }
   });
 
   it("disables tools and the key when suspended", () => {

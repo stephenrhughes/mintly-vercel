@@ -157,3 +157,34 @@ test("changing plan needs a signed-in user (PLAN-01)", async ({ page }) => {
   await page.goto("/app/subscription/change/card-added?session_id=cs_test_1");
   await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fsubscription%2Fchange%2Fcard-added/);
 });
+
+test("tools and usage need a signed-in user (plan §6.2, §6.4)", async ({ page }) => {
+  await page.goto("/app/tools");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Ftools$/);
+  await page.goto("/app/usage");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fusage$/);
+});
+
+test("the check proxy refuses cross-site and signed-out requests (plan §6.2)", async ({
+  request,
+  baseURL,
+}) => {
+  const body = { kind: "account", sortCode: "424242", accountNumber: "42424242" };
+  // No Origin, or another site's: refused before anything else.
+  expect((await request.post("/api/check", { data: body })).status()).toBe(403);
+  const crossSite = await request.post("/api/check/batch", {
+    data: { dataType: "sortcode", lines: ["424242"] },
+    headers: { origin: "https://evil.example" },
+  });
+  expect(crossSite.status()).toBe(403);
+  // Same origin but not signed in.
+  const signedOut = await request.post("/api/check", {
+    data: body,
+    headers: { origin: new URL(baseURL!).origin },
+  });
+  expect(signedOut.status()).toBe(401);
+});
+
+test("the usage sync refuses calls without the cron secret (plan §8)", async ({ request }) => {
+  expect((await request.get("/api/cron/usage-sync")).status()).toBe(401);
+});

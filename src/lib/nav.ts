@@ -51,8 +51,6 @@ export type NavGroup = { id: string; label: string; items: NavItem[]; admin?: bo
 // menu, disabled, so the menu doesn't change shape as they arrive. Remove a
 // path from here when its page ships.
 const notYetAvailable = new Set([
-  "/tools",
-  "/usage",
   "/team",
   "/billing",
   "/admin/organisations",
