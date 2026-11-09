@@ -1,11 +1,13 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
 import { createFakeApiKeyStore, newFakeState } from "@/lib/aws/fake";
+import type { ReviewStatus } from "@/lib/nav";
 
 import { PAID_PLAN, price, subscription, TRIAL_PLAN } from "./fixtures";
 import {
   MissingPlanMetadataError,
   type KeyOps,
+  type NewTrialInput,
   type ProvisionDeps,
   ProvisioningBusyError,
   type StripeOps,
@@ -65,14 +67,24 @@ function setup() {
 
   const store = new MemoryBillingStore();
   store.addUser("user_olivia", { email: "olivia@acme.test", companyName: "Acme Ltd" });
+  // Most tests approve straight away; the trial review tests hold for review.
+  const review = {
+    status: "approved" as ReviewStatus,
+    inputs: [] as NewTrialInput[],
+    async decide(input: NewTrialInput) {
+      review.inputs.push(input);
+      return { status: review.status, signals: { decided: review.status } };
+    },
+  };
   const deps: ProvisionDeps = {
     stripe,
     store,
     keys,
+    review,
     keyTags: { platform: "v2", env: "test" },
     now: () => new Date("2026-11-10T12:00:00Z"),
   };
-  return { deps, store, subs, aws, cancelled, creates: () => creates };
+  return { deps, store, subs, aws, cancelled, review, creates: () => creates };
 }
 
 const trial = (overrides: Parameters<typeof subscription>[0] = {}) =>
@@ -174,6 +186,71 @@ describe("checkout (PROV-01)", () => {
       reason: "no_organisation",
     });
     expect(t.store.orgs.size).toBe(0);
+  });
+});
+
+describe("trial review (plan §6.11)", () => {
+  it("holds a new trial for review: no key, and the owner and admins are told (APPR-01)", async () => {
+    t.review.status = "pending_review";
+    t.subs.set(
+      "sub_1",
+      trial({ metadata: { user_id: "user_olivia", signup_ip_hash: "abc", signup_country: "GB" } }),
+    );
+    const outcome = await handleStripeEvent(t.deps, checkoutEvent());
+
+    const [org] = [...t.store.orgs.values()];
+    expect(org).toMatchObject({
+      reviewStatus: "pending_review",
+      signupSignals: { decided: "pending_review" },
+    });
+    expect(t.store.keys.size).toBe(0);
+    expect(t.creates()).toBe(0);
+    expect(t.store.subscriptions.get("sub_1")).toMatchObject({ apiKeyId: null });
+    // The marketing list and the new-customer notice wait for approval.
+    expect(outcome.status === "handled" && outcome.effects).toEqual([
+      { type: "review_pending", orgId: org.id, orgName: "Acme Ltd", email: "olivia@acme.test" },
+    ]);
+  });
+
+  it("gives the reviewer what the checkout knew (APPR-04)", async () => {
+    t.store.addUser("user_olivia", {
+      email: "olivia@acme.test",
+      companyName: "Acme Ltd",
+      phone: "+44 20 7946 0000",
+    });
+    t.subs.set("sub_1", trial({ metadata: { user_id: "user_olivia", signup_country: "GB" } }));
+    await handleStripeEvent(t.deps, checkoutEvent());
+    expect(t.review.inputs).toEqual([
+      {
+        ownerEmail: "olivia@acme.test",
+        companyName: "Acme Ltd",
+        phone: "+44 20 7946 0000",
+        stripePriceId: "price_monthly",
+        tier: "starter",
+        interval: "monthly",
+        trialing: true,
+        metadata: { user_id: "user_olivia", signup_country: "GB" },
+      },
+    ]);
+  });
+
+  it("creates the key once an admin has approved and the subscription syncs again", async () => {
+    t.review.status = "pending_review";
+    t.subs.set("sub_1", trial());
+    await handleStripeEvent(t.deps, checkoutEvent());
+    const [org] = [...t.store.orgs.values()];
+
+    org.reviewStatus = "approved";
+    await syncSubscription(t.deps, "sub_1", null);
+    expect([...t.store.keys.values()]).toMatchObject([{ enabled: true, usagePlanId: TRIAL_PLAN }]);
+    expect(t.store.subscriptions.get("sub_1")?.apiKeyId).toBe([...t.store.keys.keys()][0]);
+  });
+
+  it("asks for no decision when the organisation already exists", async () => {
+    t.subs.set("sub_1", trial());
+    await handleStripeEvent(t.deps, checkoutEvent());
+    await handleStripeEvent(t.deps, subscriptionEvent("evt_again"));
+    expect(t.review.inputs).toHaveLength(1);
   });
 });
 

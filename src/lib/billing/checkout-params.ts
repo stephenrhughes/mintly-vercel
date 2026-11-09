@@ -14,6 +14,8 @@ export type CheckoutInput = {
   stripeCustomerId: string | null;
   successUrl: string;
   cancelUrl: string;
+  /** Where the checkout came from, for trial review (APPR-04): a hashed IP and a country. */
+  signals?: Record<string, string>;
 };
 
 export function checkoutSessionParams(input: CheckoutInput): Stripe.Checkout.SessionCreateParams {
@@ -21,7 +23,7 @@ export function checkoutSessionParams(input: CheckoutInput): Stripe.Checkout.Ses
   // The buyer's user ID goes on the subscription as well as the session, so
   // customer.subscription.created can provision even if it arrives before
   // checkout.session.completed.
-  const metadata = { user_id: input.userId, platform: "v2" };
+  const metadata = { ...input.signals, user_id: input.userId, platform: "v2" };
 
   return {
     mode: "subscription",

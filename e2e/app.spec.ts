@@ -135,3 +135,16 @@ test("the Stripe webhook refuses unsigned requests (PROV-10)", async ({ request 
   // 503 without Stripe configured (as in CI), 400 for a missing signature otherwise.
   expect([400, 503]).toContain(response.status());
 });
+
+test("the reminders job refuses calls without the cron secret (plan §8)", async ({ request }) => {
+  expect((await request.get("/api/cron/reminders")).status()).toBe(401);
+  const wrong = await request.get("/api/cron/reminders", {
+    headers: { authorization: "Bearer guess" },
+  });
+  expect(wrong.status()).toBe(401);
+});
+
+test("the review queue needs a signed-in admin (plan §6.8)", async ({ page }) => {
+  await page.goto("/app/admin/reviews/domains");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fadmin%2Freviews%2Fdomains$/);
+});

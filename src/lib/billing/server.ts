@@ -6,11 +6,19 @@ import { apiKeyStore, disableKey, enableKey, keyNameFor, moveKey } from "@/lib/a
 import { addContact, markTrialConverted, removeFromList } from "@/lib/brevo";
 import { adminNotifyEmail, sendEmail } from "@/lib/email/send";
 import { appUrl } from "@/lib/hosts";
-import { getDeploymentEnvironment } from "@/lib/site";
+import { getDeploymentEnvironment, siteConfig } from "@/lib/site";
 import { getPrice } from "@/lib/stripe/catalogue";
 import { requireStripe } from "@/lib/stripe/client";
 import { NewApiKeyEmail, newApiKeySubject } from "@/emails/new-api-key";
+import { createReviewOps } from "@/lib/review/decide";
+import { createServiceClient } from "@/lib/supabase/admin";
 import { NewCustomerAdminEmail, newCustomerAdminSubject } from "@/emails/new-customer-admin";
+import {
+  ReviewNeededAdminEmail,
+  reviewNeededAdminSubject,
+  ReviewPendingEmail,
+  reviewPendingSubject,
+} from "@/emails/review";
 
 import { isPlanTier, PLANS } from "./plans";
 import type { Effect, KeyOps, ProvisionDeps, StripeOps } from "./provision";
@@ -51,10 +59,12 @@ const keyOps: KeyOps = {
 };
 
 export function provisionDeps(): ProvisionDeps {
+  const db = createServiceClient();
   return {
     stripe: stripeOps(requireStripe()),
-    store: createSupabaseBillingStore(),
+    store: createSupabaseBillingStore(db),
     keys: keyOps,
+    review: createReviewOps(db),
     keyTags: { platform: "v2", env: getDeploymentEnvironment() },
   };
 }
@@ -102,6 +112,25 @@ export async function runEffects(
           break;
         case "brevo_remove":
           await removeFromList(effect.email);
+          break;
+        case "review_pending":
+          await sendEmail({
+            to: effect.email,
+            subject: reviewPendingSubject,
+            react: ReviewPendingEmail({
+              orgName: effect.orgName,
+              docsUrl: `${siteConfig.canonicalUrl}/docs`,
+            }),
+          });
+          await sendEmail({
+            to: adminNotifyEmail(),
+            subject: reviewNeededAdminSubject(effect.orgName, effect.email),
+            react: ReviewNeededAdminEmail({
+              orgName: effect.orgName,
+              email: effect.email,
+              reviewUrl: appUrl(`/admin/reviews/${effect.orgId}`),
+            }),
+          });
           break;
         case "new_key_notice": {
           const holders = await store.getKeyHolders(effect.orgId);

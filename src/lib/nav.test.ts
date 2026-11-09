@@ -91,6 +91,10 @@ describe("buildNav availability", () => {
     expect(find(approved("developer"), "api-key")?.disabledReason).toBeUndefined();
     const noOrg: NavContext = { role: null, reviewStatus: null, isMintlyAdmin: false };
     expect(find(noOrg, "subscription")?.disabledReason).toBeUndefined();
+    // Trial review arrived in phase 2b.
+    const admin = buildNav({ role: null, reviewStatus: null, isMintlyAdmin: true });
+    const reviews = admin.flatMap((g) => g.items).find((i) => i.id === "admin-reviews");
+    expect(reviews?.disabledReason).toBeUndefined();
     // Billing contacts arrive in phase 7.
     expect(find(approved("owner"), "billing")?.disabledReason).toBe("Coming soon");
   });

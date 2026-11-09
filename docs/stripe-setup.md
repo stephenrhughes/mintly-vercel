@@ -72,6 +72,13 @@ Keys the app creates are named `v2-<subscription item ID>` and tagged `platform=
 | `ADMIN_NOTIFY_EMAIL` | Where new-customer and new-user notices go. Defaults to `info@mintly.uk`. |
 | `BREVO_API_KEY`, `BREVO_LIST_ID` | The marketing list. Leave unset on previews so they never touch it. |
 
-## Trial review
+## 7. Trial review and the reminders job (phase 2b)
 
-Until phase 2b ships, new organisations are approved automatically, with `signup_signals.auto_approved = "review_not_built"`. Don't take real sign-ups on an environment running 2a alone.
+New trial organisations wait for an admin's approval at `/admin/reviews` (plan §6.11). They get no API key until then, and approval restarts the 14-day trial.
+
+| Variable | Notes |
+|---|---|
+| `CRON_SECRET` | Vercel sends it to `/api/cron/reminders`, which `vercel.json` schedules hourly. It reminds admins about trials waiting more than 4 working hours and declines trials pending for 7 days. |
+| `IP_HASH_SECRET` | Hashes sign-up IP addresses so repeat trials can be matched without storing the address. Required on production. |
+
+Trusted domains (approved automatically) and blocked domains (sign-up refused) are managed at `/admin/reviews/domains`. Before launch, seed the trusted list from current paying customers' domains, after checking it by hand (plan §10.1 step 10).

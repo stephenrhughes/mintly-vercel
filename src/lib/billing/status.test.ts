@@ -65,6 +65,21 @@ describe("describeSubscription", () => {
   });
 });
 
+describe("describeSubscription while pending review (APPR-06)", () => {
+  it("doesn't show Stripe's trial end, which approval replaces", () => {
+    expect(
+      describeSubscription(view({ trialing: true, status: "trialing", trialEnd: new Date() }), {
+        pendingReview: true,
+      }),
+    ).toEqual({
+      active: false,
+      label: "Awaiting review",
+      tone: "warning",
+      dateLine: "Your 14-day trial starts when we approve your account.",
+    });
+  });
+});
+
 describe("showKeyNotice (BILL-08)", () => {
   it("shows until dismissed", () => {
     expect(showKeyNotice(view())).toBe(false);

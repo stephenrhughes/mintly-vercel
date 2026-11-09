@@ -61,7 +61,9 @@ export interface BillingStore {
     keyNoticeAt: Date | null;
   }): Promise<void>;
 
-  getProfile(userId: string): Promise<(Person & { companyName: string | null }) | null>;
+  getProfile(
+    userId: string,
+  ): Promise<(Person & { companyName: string | null; phone: string | null }) | null>;
   getOwner(orgId: string): Promise<Person | null>;
   /** Owners and developers: the people who use the key (BILL-08). */
   getKeyHolders(orgId: string): Promise<Person[]>;

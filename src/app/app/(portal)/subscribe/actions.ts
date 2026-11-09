@@ -1,15 +1,17 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 
 import { requireUser } from "@/lib/auth/session";
-import { blockingSubscription, findBuyer } from "@/lib/billing/checkout";
+import { blockingSubscription, findBuyer, isBlockedDomain } from "@/lib/billing/checkout";
 import { type BlockingSubscription, checkoutSessionParams } from "@/lib/billing/checkout-params";
 import { PLAN_INTENT_COOKIE } from "@/lib/billing/plan-intent";
 import { planNameFor } from "@/lib/billing/queries";
 import { isBillingInterval, isPlanTier, PLANS } from "@/lib/billing/plans";
 import { appUrl } from "@/lib/hosts";
+import { requestSignals } from "@/lib/review/request-signals";
+import { mayCheckOut } from "@/lib/review/rules";
 import { siteConfig } from "@/lib/site";
 import { getPlanPrice } from "@/lib/stripe/catalogue";
 import { getStripe } from "@/lib/stripe/client";
@@ -41,6 +43,11 @@ export async function startCheckout(
   if (user.membership && user.membership.role !== "owner") {
     return { error: "Only your account owner can choose a plan." };
   }
+  // A declined or suspended organisation can't start again here, and nor
+  // can a blocked domain (plan §6.11). The wording gives no reason.
+  if (!mayCheckOut(user.membership?.reviewStatus ?? null) || (await isBlockedDomain(user.email))) {
+    return { error: `We can't start a subscription for your account. ${support}` };
+  }
 
   const buyer = await findBuyer(user);
   if (buyer.kind === "other_org") {
@@ -71,6 +78,7 @@ export async function startCheckout(
       userId: user.id,
       email: user.email,
       stripeCustomerId,
+      signals: { ...requestSignals(await headers()) },
       successUrl: appUrl("/welcome?session_id={CHECKOUT_SESSION_ID}"),
       cancelUrl: appUrl(`/subscribe?plan=${tier}&interval=${interval}`),
     }),

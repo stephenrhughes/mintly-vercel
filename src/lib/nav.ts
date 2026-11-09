@@ -55,7 +55,6 @@ const notYetAvailable = new Set([
   "/usage",
   "/team",
   "/billing",
-  "/admin/reviews",
   "/admin/organisations",
   "/admin/reports",
   "/admin/plans",

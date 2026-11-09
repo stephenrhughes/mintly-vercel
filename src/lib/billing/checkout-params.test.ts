@@ -41,6 +41,20 @@ describe("checkoutSessionParams", () => {
     expect(params.subscription_data?.trial_period_days).toBeUndefined();
     expect(params.customer_email).toBeUndefined();
   });
+
+  it("carries the review signals on the subscription, without letting them override the user (APPR-04)", () => {
+    const params = checkoutSessionParams({
+      ...base,
+      stripeCustomerId: null,
+      signals: { signup_ip_hash: "abc", signup_country: "GB", user_id: "someone_else" },
+    });
+    expect(params.subscription_data?.metadata).toEqual({
+      signup_ip_hash: "abc",
+      signup_country: "GB",
+      user_id: "user_1",
+      platform: "v2",
+    });
+  });
 });
 
 describe("findBlockingSubscription (BUY-05)", () => {

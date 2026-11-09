@@ -14,7 +14,7 @@ type Sub = {
   apiKeyId: string | null;
   keyNoticeAt: Date | null;
 };
-type User = Person & { companyName: string | null };
+type User = Person & { companyName: string | null; phone: string | null };
 
 export class MemoryBillingStore implements BillingStore {
   events = new Map<string, { type: string; processed: boolean; error: string | null }>();
@@ -27,7 +27,7 @@ export class MemoryBillingStore implements BillingStore {
   private nextOrg = 0;
 
   addUser(id: string, user: Partial<User> & { email: string }) {
-    this.users.set(id, { marketingOptOut: false, companyName: null, ...user });
+    this.users.set(id, { marketingOptOut: false, companyName: null, phone: null, ...user });
   }
 
   async claimEvent(id: string, type: string): Promise<EventClaim> {

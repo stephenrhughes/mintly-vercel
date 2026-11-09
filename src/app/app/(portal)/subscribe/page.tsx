@@ -3,6 +3,7 @@ import { cookies } from "next/headers";
 import { Suspense } from "react";
 
 import { PageHeader } from "@/components/app/page-header";
+import { AccountUnavailableNotice } from "@/components/app/pending-review-notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/session";
@@ -52,6 +53,15 @@ async function Subscribe({ searchParams }: PageProps<"/app/subscribe">) {
             </CardDescription>
           </CardHeader>
         </Card>
+      </Shell>
+    );
+  }
+
+  if (membership?.reviewStatus === "rejected" || membership?.reviewStatus === "suspended") {
+    // plan §6.11: a declined or suspended organisation can't check out.
+    return (
+      <Shell>
+        <AccountUnavailableNotice suspended={membership.reviewStatus === "suspended"} />
       </Shell>
     );
   }

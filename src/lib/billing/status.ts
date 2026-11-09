@@ -37,8 +37,21 @@ const formatDate = (date: Date) =>
     timeZone: "Europe/London",
   });
 
-export function describeSubscription(sub: SubscriptionView): SubscriptionStatus {
+export function describeSubscription(
+  sub: SubscriptionView,
+  options: { pendingReview?: boolean } = {},
+): SubscriptionStatus {
   const active = !sub.expired && Boolean(sub.apiKeyId) && sub.keyEnabled;
+
+  if (options.pendingReview && !sub.expired) {
+    // APPR-06: Stripe's trial end is replaced on approval, so don't show it.
+    return {
+      active: false,
+      label: "Awaiting review",
+      tone: "warning",
+      dateLine: "Your 14-day trial starts when we approve your account.",
+    };
+  }
 
   if (sub.expired) {
     return {

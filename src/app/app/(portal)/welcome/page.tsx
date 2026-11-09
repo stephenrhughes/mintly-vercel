@@ -3,6 +3,7 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { PageHeader } from "@/components/app/page-header";
+import { PendingReviewNotice } from "@/components/app/pending-review-notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth/session";
@@ -73,6 +74,16 @@ async function Welcome({ searchParams }: PageProps<"/app/welcome">) {
 
   // The conversion events (a gtag conversion and GA successful_subscription)
   // are sent from here once analytics and consent arrive in phase 6.
+  if (membership.reviewStatus === "pending_review") {
+    // plan §6.11 step 3: the trial waits for review.
+    return (
+      <div className="grid gap-8" data-conversion="subscription">
+        <PageHeader title={title} description="Thanks for starting your free trial." />
+        <PendingReviewNotice orgName={membership.orgName} />
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-8" data-conversion="subscription">
       <PageHeader title={title} description={`${membership.orgName} is ready.`} />

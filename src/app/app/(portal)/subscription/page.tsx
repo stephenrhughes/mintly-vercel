@@ -158,8 +158,10 @@ function SubscriptionCard({
   name: string;
   user: AppUser;
 }) {
-  const status = describeSubscription(sub);
   const membership = user.membership!;
+  const status = describeSubscription(sub, {
+    pendingReview: membership.reviewStatus === "pending_review",
+  });
   const seats = seatLimit({ maxTeamSize: sub.maxTeamSize, extraUsers: sub.extraUsers });
 
   return (

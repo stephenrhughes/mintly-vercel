@@ -3,6 +3,8 @@
 // refuses to run in production. State lives on globalThis so it survives
 // hot reloads in `next dev`; it is lost when the server restarts.
 
+import { randomUUID } from "node:crypto";
+
 import { getDeploymentEnvironment } from "@/lib/site";
 
 import type { ApiKeyInfo, ApiKeyStore, UsagePlanInfo, UsagePlanStore } from "./types";
@@ -48,7 +50,10 @@ export function createFakeApiKeyStore(own?: FakeState): ApiKeyStore {
       assertNotProduction();
       const n = ++s().counter;
       const key: FakeKey = {
-        id: `fakekey${n}`,
+        // Random, not numbered: the database outlives this in-memory state
+        // (a restarted dev server), and a reused ID would point at another
+        // organisation's key row.
+        id: `fakekey${randomUUID().replaceAll("-", "").slice(0, 10)}`,
         name,
         enabled: true,
         value: `fake_${n}_${Math.random().toString(36).slice(2, 14)}`,

@@ -178,15 +178,16 @@ export function createSupabaseBillingStore(
     async getProfile(userId) {
       const { data, error } = await db
         .from("profiles")
-        .select("email, marketing_opt_out, company_name")
+        .select("email, marketing_opt_out, company_name, phone")
         .eq("id", userId)
-        .maybeSingle<PersonRow & { company_name: string | null }>();
+        .maybeSingle<PersonRow & { company_name: string | null; phone: string | null }>();
       if (error) fail("reading the profile", error);
       return data
         ? {
             email: data.email,
             marketingOptOut: data.marketing_opt_out,
             companyName: data.company_name,
+            phone: data.phone,
           }
         : null;
     },

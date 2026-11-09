@@ -15,6 +15,8 @@ import type { BillingStore, OrgSummary, StoredSubscription } from "./store";
 import {
   deriveSubscriptionRecord,
   isLiveStatus,
+  priceMeta,
+  subscriptionItem,
   type SubscriptionLike,
   type SubscriptionRecord,
   UPGRADE_CANCELLATION_COMMENT,
@@ -59,10 +61,29 @@ export type StripeOps = {
   cancelSubscription(id: string, comment: string): Promise<void>;
 };
 
+/** What trial review needs to know about a new organisation's checkout (plan §6.11). */
+export type NewTrialInput = {
+  ownerEmail: string;
+  companyName: string | null;
+  phone: string | null;
+  stripePriceId: string;
+  tier: string | null;
+  interval: string | null;
+  trialing: boolean;
+  /** The subscription's metadata, including the checkout's request signals. */
+  metadata: Record<string, string>;
+};
+
+/** Decides whether a new organisation is reviewed: src/lib/review/decide.ts in the app. */
+export type ReviewOps = {
+  decide(input: NewTrialInput): Promise<{ status: ReviewStatus; signals: Record<string, unknown> }>;
+};
+
 export type ProvisionDeps = {
   stripe: StripeOps;
   store: BillingStore;
   keys: KeyOps;
+  review: ReviewOps;
   /** Tags for new keys (plan §10.4: platform=v2, env=…). */
   keyTags: Record<string, string>;
   now?: () => Date;
@@ -82,7 +103,9 @@ export type Effect =
   | { type: "brevo_add"; email: string }
   | { type: "brevo_trial_converted"; email: string }
   | { type: "brevo_remove"; email: string }
-  | { type: "new_key_notice"; orgId: string; orgName: string };
+  | { type: "new_key_notice"; orgId: string; orgName: string }
+  /** A new trial is waiting for review: tell the owner and the admins (plan §6.11). */
+  | { type: "review_pending"; orgId: string; orgName: string; email: string };
 
 export type SyncResult =
   | { status: "skipped"; reason: "eiscd" | "no_organisation" }
@@ -93,15 +116,6 @@ export type SyncResult =
       keyActions: KeyAction[];
       effects: Effect[];
     };
-
-/**
- * The review status for a new organisation. Trial review arrives in phase
- * 2b (plan §6.11); until then every new organisation is approved, on
- * staging only, and the reason is recorded so 2b can find them.
- */
-export function initialReviewStatus(): { status: ReviewStatus; signals: Record<string, unknown> } {
-  return { status: "approved", signals: { auto_approved: "review_not_built" } };
-}
 
 export async function syncSubscription(
   deps: ProvisionDeps,
@@ -145,7 +159,7 @@ async function sync(
       // organisation, or to admin set-up (ADM-12, phase 5).
       return { status: "skipped", reason: "no_organisation" };
     }
-    org = await createOrganisation(store, record.stripeCustomerId, buyer.userId);
+    org = await createOrganisation(deps, sub, record, buyer.userId);
     created = true;
   }
 
@@ -209,16 +223,32 @@ function userFromMetadata(sub: SubscriptionLike): CheckoutContext | null {
 }
 
 async function createOrganisation(
-  store: BillingStore,
-  stripeCustomerId: string,
+  { store, review }: ProvisionDeps,
+  sub: SubscriptionLike,
+  record: SubscriptionRecord,
   ownerId: string,
 ): Promise<OrgSummary> {
   const profile = await store.getProfile(ownerId);
-  const name = profile?.companyName?.trim() || profile?.email.split("@")[1] || "My organisation";
-  const { status, signals } = initialReviewStatus();
+  if (!profile) throw new Error(`No profile for the buyer ${ownerId}`);
+  const name = profile.companyName?.trim() || profile.email.split("@")[1] || "My organisation";
+
+  // A new trial organisation is held for review unless a rule approves it
+  // (APPR-01, APPR-02). The decision and the signals behind it are kept on
+  // the organisation for the review queue (APPR-04).
+  const meta = priceMeta(subscriptionItem(sub)?.price);
+  const { status, signals } = await review.decide({
+    ownerEmail: profile.email,
+    companyName: profile.companyName,
+    phone: profile.phone,
+    stripePriceId: record.stripePriceId,
+    tier: meta.tier,
+    interval: meta.interval,
+    trialing: record.trialing,
+    metadata: { ...sub.metadata },
+  });
   return store.provisionOrganisation({
     name,
-    stripeCustomerId,
+    stripeCustomerId: record.stripeCustomerId,
     ownerId,
     reviewStatus: status,
     signupSignals: signals,
@@ -299,7 +329,11 @@ async function planEffects(
   const owner = await store.getOwner(org.id);
   const isNewSubscription = !previous && isLiveStatus(record.status);
 
-  if (isNewSubscription && owner) {
+  if (isNewSubscription && owner && org.reviewStatus === "pending_review") {
+    // plan §6.11: the owner is told we're reviewing, and admins are asked
+    // to review. The marketing list waits for approval.
+    effects.push({ type: "review_pending", orgId: org.id, orgName: org.name, email: owner.email });
+  } else if (isNewSubscription && owner) {
     // PROV-02: tell Mintly, and add the customer to the marketing list
     // unless they opted out (AUTH-06).
     effects.push({

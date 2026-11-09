@@ -3,6 +3,7 @@ import "server-only";
 import { cache } from "react";
 
 import type { AppUser } from "@/lib/auth/session";
+import { normaliseDomain } from "@/lib/review/rules";
 import { requireStripe } from "@/lib/stripe/client";
 import { createServiceClient } from "@/lib/supabase/admin";
 
@@ -62,4 +63,17 @@ export async function blockingSubscription(
     limit: 20,
   });
   return findBlockingSubscription(data);
+}
+
+/** Whether the buyer's email domain has been blocked by an admin (APPR-05). */
+export async function isBlockedDomain(email: string): Promise<boolean> {
+  const domain = normaliseDomain(email.split("@").pop());
+  if (!domain) return false;
+  const { data, error } = await createServiceClient()
+    .from("blocked_domains")
+    .select("domain")
+    .eq("domain", domain)
+    .maybeSingle();
+  if (error) throw new Error(`checking blocked domains failed: ${error.message}`);
+  return Boolean(data);
 }
