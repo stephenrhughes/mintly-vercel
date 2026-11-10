@@ -74,16 +74,37 @@ describe("buildNav availability", () => {
     expect(find(ctx, "account")?.disabledReason).toBeUndefined();
   });
 
-  it("keeps tools but not the key while pending review (NAV-14)", () => {
+  it("keeps tools (in sandbox mode) but not the key while pending review (NAV-14, APPR-03)", () => {
     const ctx: NavContext = { role: "owner", reviewStatus: "pending_review", isMintlyAdmin: false };
     expect(find(ctx, "api-key")?.disabledReason).toBe("Available once your account is approved");
-    expect(find(ctx, "tools")?.disabledReason).not.toBe("Choose a plan first");
+    expect(find(ctx, "tools")?.disabledReason).toBeUndefined();
+    expect(find(ctx, "usage")?.disabledReason).toBeUndefined();
+  });
+
+  it("opens Tools and Usage to every role now that phase 3 has shipped them", () => {
+    for (const role of ["owner", "developer", "member"] as const) {
+      expect(find(approved(role), "tools")?.disabledReason).toBeUndefined();
+      expect(find(approved(role), "usage")?.disabledReason).toBeUndefined();
+    }
   });
 
   it("disables tools and the key when suspended", () => {
     const ctx: NavContext = { role: "developer", reviewStatus: "suspended", isMintlyAdmin: false };
     expect(find(ctx, "tools")?.disabledReason).toBe("Your account is suspended");
     expect(find(ctx, "api-key")?.disabledReason).toBe("Your account is suspended");
+  });
+
+  it("opens the subscription, plans and API key now that phase 2a has shipped them", () => {
+    expect(find(approved("owner"), "subscription")?.disabledReason).toBeUndefined();
+    expect(find(approved("developer"), "api-key")?.disabledReason).toBeUndefined();
+    const noOrg: NavContext = { role: null, reviewStatus: null, isMintlyAdmin: false };
+    expect(find(noOrg, "subscription")?.disabledReason).toBeUndefined();
+    // Trial review arrived in phase 2b.
+    const admin = buildNav({ role: null, reviewStatus: null, isMintlyAdmin: true });
+    const reviews = admin.flatMap((g) => g.items).find((i) => i.id === "admin-reviews");
+    expect(reviews?.disabledReason).toBeUndefined();
+    // Billing contacts arrive in phase 7.
+    expect(find(approved("owner"), "billing")?.disabledReason).toBe("Coming soon");
   });
 
   it("links docs to the public site", () => {

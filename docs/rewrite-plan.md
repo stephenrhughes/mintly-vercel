@@ -109,7 +109,7 @@ All tables live in `public` with RLS enabled. Helper SQL functions such as `auth
 | `subscriptions` | `id`, `org_id`, `product` (`bank_checker` / `eiscd`), `stripe_subscription_id`, `stripe_subscription_item_id`, `stripe_price_id`, `status`, `trialing`, `current_period_end`, `cancel_at`, `expired`, `max_team_size`, `extra_users`, `usage_plan_id`, `api_key_id`, `updated_from_stripe_at` | One live subscription per organisation and product. Members read their own (never the key value, which isn't stored). Derived from Stripe (`subscriptionRecord` logic). |
 | `api_keys` | `id` (= API Gateway key ID), `org_id`, `product`, `enabled`, `usage_plan_id`, `created_at`, `rotated_from` | Never stores the key **value**; owners and developers get it from API Gateway on demand (§7) |
 | `usage_daily` | `api_key_id`, `date`, `success`, `not_found`, `synced_at` | Filled nightly (§6.4); members read rows for their organisation's keys |
-| `check_log` | `id`, `org_id`, `user_id`, `at`, `kind` (`sortcode` / `account` / `iban` / `swift`), `mode` (`single` / `bulk`), `outcome` (`valid` / `invalid` / `rate_limited` / `error`) | Per-user audit of Tools use. **Never stores sort codes, account numbers, IBANs or BICs.** Owners read their organisation's rows. |
+| `check_log` | `id`, `org_id`, `user_id`, `at`, `kind` (`sortcode` / `account` / `iban` / `swift`), `mode` (`single` / `bulk`), `outcome` (`valid` / `invalid` / `rate_limited` / `error`), `sandbox` (made against the sandbox while pending review) | Per-user audit of Tools use. **Never stores sort codes, account numbers, IBANs or BICs.** Users read their own rows; owners read their organisation's. |
 | `offers` | `id`, `org_id` or `email`, `stripe_price_id`, `headline`, `message`, `expires_at`, `accepted_at`, `revoked_at`, `created_by` | One model for the admin and the customer (fixes the gap in requirements §5.4) |
 | `sso_domains` | `domain` (unique), `org_id`, `supabase_sso_provider_id`, `default_role`, `enabled` | Admin only; the sign-in lookup goes through the server |
 | `stripe_events` | `id` (= Stripe event ID), `type`, `received_at`, `processed_at`, `error` | Makes webhook handling idempotent (`NFR-04`) |
@@ -615,6 +615,11 @@ Each phase ends with something working on staging.
 
 Phase 6 can run alongside phases 2–5 because it doesn't depend on them.
 
+Phase 2 is delivered in three parts:
+- **2a: provisioning.** Plans, checkout, the Stripe webhook, the AWS adapter, key provisioning, the subscription page, the billing portal, Resend and Brevo.
+- **2b: trial review.** The pending state, review queue and actions, trusted and blocked domains, auto-approve rules, and the hourly reminders job. The SSO-domain rule waits for `sso_domains` (phase 4), and sandbox mode on the Tools page for the Tools page (phase 3).
+- **2c: Change plan and key rotation.** `/subscription/change` for owners (trial switch, start paid, upgrade, scheduled downgrade, with Stripe's preview), trial-ending reminders, and key rotation for owners and developers. The admin version of Change plan (PLAN-09) arrives with the organisation detail page in phase 5; usage-based recommendations and warnings arrive with the usage sync in phase 3.
+
 ---
 
 ## 12. Risks
@@ -641,9 +646,9 @@ These are smaller choices. Defaults are proposed, so they don't block phase 0.
 1. **Invite expiry:** 14 days proposed.
 2. *(Decided: owners and developers can rotate the key themselves at launch, §6.13.)*
 3. **Bot protection:** keep reCAPTCHA, or switch to Cloudflare Turnstile (free and more privacy-friendly).
-4. **`check_log` retention:** 13 months proposed.
+4. **`check_log` retention:** 13 months proposed. *(Built with this default in phase 3: the nightly usage sync deletes older rows.)*
 5. **Design direction:** Tailwind and shadcn/ui proposed. Any brand guidelines or designer input?
-6. **Developer role and usage:** can developers see the per-person breakdown, or only owners? Owners only proposed.
+6. **Developer role and usage:** can developers see the per-person breakdown, or only owners? Owners only proposed. *(Built with this default in phase 3: everyone sees their own count; owners see everyone's.)*
 7. **Which Supabase plan:** SAML SSO needs a paid plan. Confirm the cost.
 8. **Ownership changes:** should owners be able to hand ownership to another member themselves, or only through support? Only through support is proposed for launch.
 

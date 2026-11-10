@@ -1,5 +1,6 @@
 // Supabase project settings. The publishable (anon) key is safe in the
-// browser; RLS decides what it can read. The secret key is never used here.
+// browser; RLS decides what it can read. The secret key is read only by the
+// server-only client in admin.ts.
 
 type Env = Record<string, string | undefined>;
 

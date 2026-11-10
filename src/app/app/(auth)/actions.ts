@@ -1,13 +1,22 @@
 "use server";
 
+import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 import { z } from "zod";
 
 import { authErrorMessage, type FormState, notConfiguredMessage } from "@/lib/auth/errors";
+import { notifyAdminOfNewUser } from "@/lib/auth/new-user-notice";
 import { passwordProblems } from "@/lib/auth/password";
 import { clearPendingEmail, getPendingEmail, setPendingEmail } from "@/lib/auth/pending-email";
 import { isRecentEmailVerification } from "@/lib/auth/recovery";
 import { authCallbackUrl } from "@/lib/auth/urls";
+import {
+  encodeIntent,
+  intentFromNext,
+  PLAN_INTENT_COOKIE,
+  planIntentCookieOptions,
+} from "@/lib/billing/plan-intent";
 import { appPath, safeNextPath } from "@/lib/hosts";
 import { legalDocuments } from "@/lib/legal";
 import { getSupabaseConfig } from "@/lib/supabase/config";
@@ -18,6 +27,14 @@ const email = z.email({ error: "Enter a valid email address" }).max(254);
 
 async function client() {
   return getSupabaseConfig() ? createClient() : null;
+}
+
+// BUY-02: keep the plan chosen on the pricing page for 24 hours, for when
+// the email is confirmed in another tab and `next` is lost.
+async function rememberPlanIntent(next: string) {
+  const intent = intentFromNext(next);
+  if (intent)
+    (await cookies()).set(PLAN_INTENT_COOKIE, encodeIntent(intent), planIntentCookieOptions());
 }
 
 // AUTH-01, AUTH-10: sign in with email and password. A user with MFA turned
@@ -114,6 +131,7 @@ export async function signUp(_state: FormState, formData: FormData): Promise<For
   });
   if (error) return { error: authErrorMessage(error), values };
 
+  await rememberPlanIntent(next);
   await setPendingEmail(values.email);
   redirect(appPath(`/check-email?next=${encodeURIComponent(next)}`));
 }
@@ -133,9 +151,15 @@ export async function confirmSignUp(_state: FormState, formData: FormData): Prom
   const supabase = await client();
   if (!supabase) return { error: notConfiguredMessage };
 
-  const { error } = await supabase.auth.verifyOtp({ email: address, token: code, type: "email" });
+  const { data, error } = await supabase.auth.verifyOtp({
+    email: address,
+    token: code,
+    type: "email",
+  });
   if (error) return { error: authErrorMessage(error) };
 
+  const userId = data.user?.id;
+  if (userId) after(() => notifyAdminOfNewUser(userId));
   await clearPendingEmail();
   redirect(appPath(next));
 }

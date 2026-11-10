@@ -12,6 +12,7 @@ In `.env.local` (local) and in Vercel (per environment):
 |---|---|---|
 | `NEXT_PUBLIC_SUPABASE_URL` | Project Settings → API → Project URL | The app |
 | `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Project Settings → API Keys → Publishable key (or the legacy `anon` key, as `NEXT_PUBLIC_SUPABASE_ANON_KEY`) | The app |
+| `SUPABASE_SECRET_KEY` | Project Settings → API Keys → Secret key (or the legacy `service_role` key, as `SUPABASE_SERVICE_ROLE_KEY`) | Server code only: the Stripe webhook, provisioning and admin actions. It bypasses RLS, so never prefix it with `NEXT_PUBLIC_`. |
 | `SUPABASE_DB_URL` | Connect → Session pooler connection string, with the database password filled in | `npm run db:push` only. Don't add it to Vercel. |
 | `NEXT_PUBLIC_APP_URL` | `https://app.mintly.uk` (production) or the staging app host. Leave unset on previews. | The app (requirements §15.4) |
 | `SIGNED_IN_HINT_COOKIE_DOMAIN` | `.mintly.uk` on staging and production | The app (`APP-06`) |

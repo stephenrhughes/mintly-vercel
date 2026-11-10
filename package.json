@@ -23,8 +23,13 @@
     "check": "npm run lint && npm run typecheck && npm run format:check && npm run test"
   },
   "dependencies": {
+    "@aws-sdk/client-api-gateway": "^3.1164.0",
+    "@aws-sdk/client-dynamodb": "^3.1165.0",
+    "@aws-sdk/lib-dynamodb": "^3.1165.0",
+    "@react-email/components": "^1.0.12",
     "@supabase/ssr": "^0.12.7",
     "@supabase/supabase-js": "^2.119.0",
+    "@vercel/oidc-aws-credentials-provider": "^3.3.19",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
     "lucide-react": "^1.61.0",
@@ -32,7 +37,10 @@
     "radix-ui": "^1.8.1",
     "react": "19.3.0",
     "react-dom": "19.3.0",
+    "recharts": "^3.10.1",
+    "resend": "^6.37.0",
     "server-only": "^0.0.1",
+    "stripe": "^23.1.0",
     "tailwind-merge": "^3.7.0",
     "zod": "^4.6.7"
   },

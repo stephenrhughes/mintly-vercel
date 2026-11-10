@@ -3,6 +3,7 @@ import "server-only";
 import { createServerClient } from "@supabase/ssr";
 import { createClient as createStatelessClient } from "@supabase/supabase-js";
 import { cookies } from "next/headers";
+import { connection } from "next/server";
 
 import { requireSupabaseConfig } from "./config";
 
@@ -12,6 +13,12 @@ import { requireSupabaseConfig } from "./config";
  */
 export async function createClient() {
   const { url, publishableKey } = requireSupabaseConfig();
+  // Supabase checks the session's expiry against the clock (Date.now()).
+  // With Partial Prefetching, cookies() alone still lets data into the
+  // prefetched App Shell, where reading the time is an error, so wait for
+  // the real request first. A session is per request anyway, and permission
+  // checks must never come from a prefetched copy.
+  await connection();
   const cookieStore = await cookies();
 
   return createServerClient(url, publishableKey, {

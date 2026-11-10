@@ -98,3 +98,93 @@ test("the sales site shows Open app when the signed-in hint is set (APP-06)", as
     "/app",
   );
 });
+
+test("billing pages need a signed-in user, and keep the plan chosen (BUY-02, SUB-05)", async ({
+  page,
+}) => {
+  await page.goto("/app/subscribe?plan=professional&interval=annual");
+  await expect(page).toHaveURL(
+    /\/app\/sign-in\?next=%2Fsubscribe%3Fplan%3Dprofessional%26interval%3Dannual$/,
+  );
+
+  await page.goto("/app/subscription");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fsubscription$/);
+
+  await page.goto("/app/welcome?session_id=cs_test_123");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fwelcome/);
+});
+
+test("sign-up names the plan picked on the pricing page (BUY-02)", async ({ page }) => {
+  await page.goto("/app/sign-up?next=%2Fsubscribe%3Fplan%3DstandardPlus");
+  await expect(
+    page.getByText("You're starting a free trial of the Standard Plus Plan."),
+  ).toBeVisible();
+
+  // A made-up plan is ignored.
+  // (The streamed card briefly sits next to its fallback, which has the same text.)
+  await page.goto("/app/sign-up?next=%2Fsubscribe%3Fplan%3Dconstructor");
+  await expect(page.getByLabel("Work email")).toBeVisible();
+  await expect(
+    page.getByText("Start a 14-day free trial. No card needed.").filter({ visible: true }).first(),
+  ).toBeVisible();
+  await expect(page.getByText(/You're starting a free trial/)).toHaveCount(0);
+});
+
+test("the Stripe webhook refuses unsigned requests (PROV-10)", async ({ request }) => {
+  const response = await request.post("/api/webhooks/stripe", { data: "{}" });
+  // 503 without Stripe configured (as in CI), 400 for a missing signature otherwise.
+  expect([400, 503]).toContain(response.status());
+});
+
+test("the reminders job refuses calls without the cron secret (plan §8)", async ({ request }) => {
+  expect((await request.get("/api/cron/reminders")).status()).toBe(401);
+  const wrong = await request.get("/api/cron/reminders", {
+    headers: { authorization: "Bearer guess" },
+  });
+  expect(wrong.status()).toBe(401);
+});
+
+test("the review queue needs a signed-in admin (plan §6.8)", async ({ page }) => {
+  await page.goto("/app/admin/reviews/domains");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fadmin%2Freviews%2Fdomains$/);
+});
+
+test("changing plan needs a signed-in user (PLAN-01)", async ({ page }) => {
+  await page.goto("/app/subscription/change?tier=professional&interval=annual");
+  await expect(page).toHaveURL(
+    /\/app\/sign-in\?next=%2Fsubscription%2Fchange%3Ftier%3Dprofessional%26interval%3Dannual$/,
+  );
+  await page.goto("/app/subscription/change/card-added?session_id=cs_test_1");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fsubscription%2Fchange%2Fcard-added/);
+});
+
+test("tools and usage need a signed-in user (plan §6.2, §6.4)", async ({ page }) => {
+  await page.goto("/app/tools");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Ftools$/);
+  await page.goto("/app/usage");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fusage$/);
+});
+
+test("the check proxy refuses cross-site and signed-out requests (plan §6.2)", async ({
+  request,
+  baseURL,
+}) => {
+  const body = { kind: "account", sortCode: "424242", accountNumber: "42424242" };
+  // No Origin, or another site's: refused before anything else.
+  expect((await request.post("/api/check", { data: body })).status()).toBe(403);
+  const crossSite = await request.post("/api/check/batch", {
+    data: { dataType: "sortcode", lines: ["424242"] },
+    headers: { origin: "https://evil.example" },
+  });
+  expect(crossSite.status()).toBe(403);
+  // Same origin but not signed in.
+  const signedOut = await request.post("/api/check", {
+    data: body,
+    headers: { origin: new URL(baseURL!).origin },
+  });
+  expect(signedOut.status()).toBe(401);
+});
+
+test("the usage sync refuses calls without the cron secret (plan §8)", async ({ request }) => {
+  expect((await request.get("/api/cron/usage-sync")).status()).toBe(401);
+});

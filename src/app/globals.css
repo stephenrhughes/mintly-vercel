@@ -40,6 +40,9 @@
   --app-surface: oklch(0.975 0.004 247.9);
   --admin: oklch(0.5 0.17 295);
   --admin-foreground: oklch(1 0 0);
+  /* Usage chart series (MON-01), validated for colour-blind separation. */
+  --chart-valid: #1baf7a;
+  --chart-invalid: #eb6834;
 }
 
 .dark {
@@ -64,6 +67,8 @@
   --app-surface: oklch(0.22 0.025 267);
   --admin: oklch(0.72 0.14 295);
   --admin-foreground: oklch(0.2 0.03 290);
+  --chart-valid: #199e70;
+  --chart-invalid: #d95926;
 }
 
 @theme inline {
