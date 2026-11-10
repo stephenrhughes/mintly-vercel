@@ -88,7 +88,8 @@ export type AuditEntry = {
   details: Record<string, unknown>;
 };
 
-async function auditEntries(filter: {
+/** Audit entries, newest first, with actor emails and organisation names (ADM-07). */
+export async function auditEntries(filter: {
   orgId?: string;
   prefix?: string;
   limit: number;

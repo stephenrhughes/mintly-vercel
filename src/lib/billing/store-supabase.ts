@@ -216,11 +216,23 @@ export function createSupabaseBillingStore(
 async function readKey(db: SupabaseClient, column: string, value: string) {
   const { data, error } = await db
     .from("api_keys")
-    .select("id, enabled, usage_plan_id")
+    .select("id, enabled, usage_plan_id, disabled_by_admin")
     .eq(column, value)
-    .maybeSingle<{ id: string; enabled: boolean; usage_plan_id: string | null }>();
+    .maybeSingle<{
+      id: string;
+      enabled: boolean;
+      usage_plan_id: string | null;
+      disabled_by_admin: boolean;
+    }>();
   if (error) fail("reading the key", error);
-  return data ? { id: data.id, enabled: data.enabled, usagePlanId: data.usage_plan_id } : null;
+  return data
+    ? {
+        id: data.id,
+        enabled: data.enabled,
+        usagePlanId: data.usage_plan_id,
+        disabledByAdmin: data.disabled_by_admin,
+      }
+    : null;
 }
 
 async function people(db: SupabaseClient, orgId: string, roles: OrgRole[]) {

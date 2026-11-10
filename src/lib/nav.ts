@@ -52,9 +52,7 @@ export type NavGroup = { id: string; label: string; items: NavItem[]; admin?: bo
 // path from here when its page ships.
 const notYetAvailable = new Set([
   "/billing",
-  "/admin/organisations",
   "/admin/reports",
-  "/admin/plans",
   "/admin/offers",
   "/admin/sso",
   "/admin/admins",

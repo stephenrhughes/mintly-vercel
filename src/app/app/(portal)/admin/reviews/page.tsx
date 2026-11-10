@@ -11,7 +11,7 @@ import { appPath } from "@/lib/hosts";
 import { listPendingReviews, listSuspended, recentDecisions } from "@/lib/review/queries";
 import { waitingFor } from "@/lib/review/rules";
 
-import { actionText, Check, dateTime } from "./shared";
+import { actionText, Check, dateTime } from "@/components/admin/shared";
 
 export const metadata: Metadata = { title: "Trial reviews" };
 

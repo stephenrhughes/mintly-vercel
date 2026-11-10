@@ -7,7 +7,13 @@ import type { ReviewStatus } from "@/lib/nav";
 import { isLiveStatus, type SubscriptionRecord } from "./subscription-record";
 
 /** The key's state as recorded in api_keys. */
-export type KeyState = { id: string; enabled: boolean; usagePlanId: string | null };
+export type KeyState = {
+  id: string;
+  enabled: boolean;
+  usagePlanId: string | null;
+  /** An admin switched the key off; it stays off until they switch it on (plan §6.8). */
+  disabledByAdmin?: boolean;
+};
 
 export type KeyAction =
   /** Create a key in this usage plan (PROV-01). */
@@ -53,6 +59,9 @@ export function planKeyActions({
     case "approved":
       break;
   }
+
+  // An admin's switch-off wins over the subscription (plan §6.8).
+  if (key?.disabledByAdmin) return disable(key);
 
   const target = record.usagePlanId;
   if (!target) return []; // provision.ts refuses these first (PROV-10).

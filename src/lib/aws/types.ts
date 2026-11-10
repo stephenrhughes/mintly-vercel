@@ -13,6 +13,8 @@ export interface ApiKeyStore {
     usagePlanId: string;
     tags: Record<string, string>;
   }): Promise<ApiKeyInfo>;
+  /** The key without its value, or null if there is no such key (ADM-03, ADM-05). */
+  describeKey(keyId: string): Promise<ApiKeyInfo | null>;
   /** The key's secret value, or null if there is no such key. */
   getKeyValue(keyId: string): Promise<string | null>;
   setEnabled(keyId: string, enabled: boolean): Promise<void>;

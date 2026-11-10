@@ -149,6 +149,24 @@ test("the review queue needs a signed-in admin (plan §6.8)", async ({ page }) =
   await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fadmin%2Freviews%2Fdomains$/);
 });
 
+// The admin pages phase 5 adds (plan §6.8): each one sends a signed-out
+// visitor to sign in, keeping where they were going.
+const adminPages = [
+  "/admin",
+  "/admin/organisations",
+  "/admin/organisations/00000000-0000-0000-0000-000000000000",
+  "/admin/plans",
+];
+
+test("the admin pages need a signed-in admin (plan §6.8)", async ({ page }) => {
+  for (const path of adminPages) {
+    await page.goto(`/app${path}`);
+    const url = new URL(page.url());
+    expect(url.pathname, path).toBe("/app/sign-in");
+    expect(url.searchParams.get("next"), path).toBe(path);
+  }
+});
+
 test("changing plan needs a signed-in user (PLAN-01)", async ({ page }) => {
   await page.goto("/app/subscription/change?tier=professional&interval=annual");
   await expect(page).toHaveURL(
