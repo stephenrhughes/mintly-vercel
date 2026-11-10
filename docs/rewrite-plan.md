@@ -467,7 +467,7 @@ If the APIs ever move off AWS (Q9), only these three files change.
 | `POST /api/check`, `POST /api/check/batch` | Tools proxy |
 | `POST /api/free-check` | Public checker |
 | `POST /api/enquiry`, `POST /api/email-capture`, `POST /api/rating` | Lead capture |
-| `POST /api/sso/lookup` | SSO domain lookup |
+| ~~`POST /api/sso/lookup`~~ | SSO domain lookup. Built as the `signInWithSso` server action on the sign-in page instead (phase 4): the same reCAPTCHA and server-side lookup, and Next.js checks the origin. |
 | `POST /api/webhooks/stripe` | Stripe events, including GoCardless collection |
 | `GET /api/cron/usage-sync`, `GET /api/cron/metering`, `GET /api/cron/reminders` | Vercel Cron, protected by `CRON_SECRET`. `reminders` runs hourly: trial-ending emails, review reminders, and declining reviews older than 7 days. `GET /api/cron/retention` runs daily: 30-day notices and the 24-month purge (§6.13). |
 

@@ -221,3 +221,19 @@ test("sign-in and sign-up keep an invite's email and return to it (JOIN-01)", as
   await expect(page.getByLabel("Work email")).toHaveValue("mia@acme.example");
   await expect(page.getByText(/Create an account to join your team/)).toBeVisible();
 });
+
+test("sign-in offers SSO, and falls back to the password form (SSO-01, SSO-03)", async ({
+  page,
+}) => {
+  await page.goto("/app/sign-in");
+  await page.getByRole("button", { name: "Sign in with SSO" }).click();
+  const sso = page.getByRole("form", { name: "Sign in with SSO" });
+  await sso.getByLabel("Work email for SSO").fill("sam@acme.example");
+  await sso.getByRole("button", { name: "Continue with SSO" }).click();
+  // Without a Supabase project (as in CI) the look-up is unavailable.
+  await expect(sso.getByText(/Sign-in isn't available on this deployment yet/)).toBeVisible();
+
+  await page.goto("/app/sign-in?sso=none&email=sam%40acme.example");
+  await expect(page.getByText(/doesn't sign in to Mintly with SSO/)).toBeVisible();
+  await expect(page.getByLabel("Work email", { exact: true })).toHaveValue("sam@acme.example");
+});
