@@ -106,3 +106,79 @@ export function isBillingInterval(value: unknown): value is BillingInterval {
 export function getPlan(tier: PlanTier): Plan {
   return PLANS[tier];
 }
+
+/**
+ * Volume bands above the self-serve plans, sold by a call rather than
+ * checkout (ported from mintly-web src/utils/plans.js). Each carries a base
+ * fee for its allowance and a lower overage rate beyond it. `minRequests`
+ * keeps them out of the price calculator at low volumes; past
+ * `ENTERPRISE_CEILING` the calculator quotes "talk to us" instead (WEB-05).
+ */
+export const ENTERPRISE_CEILING = 300_000;
+
+export type EnterpriseTier = {
+  key: "enterprise50k" | "enterprise100k" | "enterprise200k" | "enterpriseCustom";
+  name: string;
+  description: string;
+  /** Null for the bespoke band, which has no list price. */
+  monthlyPriceGbp: number | null;
+  minRequests: number;
+  includedRequestsCount: number;
+  overagePence: number | null;
+  maxRequests: number;
+  quoteOnly?: true;
+};
+
+export const ENTERPRISE_TIERS: EnterpriseTier[] = [
+  {
+    key: "enterprise50k",
+    name: "Enterprise 50k",
+    description: "Volume pricing for teams running tens of thousands of checks a month.",
+    monthlyPriceGbp: 280,
+    minRequests: SELF_SERVE_CEILING,
+    includedRequestsCount: 50_000,
+    overagePence: 0.71,
+    maxRequests: ENTERPRISE_CEILING,
+  },
+  {
+    key: "enterprise100k",
+    name: "Enterprise 100k",
+    description: "Volume pricing for high-throughput users at around 100,000 checks a month.",
+    monthlyPriceGbp: 440,
+    minRequests: SELF_SERVE_CEILING,
+    includedRequestsCount: 100_000,
+    overagePence: 0.56,
+    maxRequests: ENTERPRISE_CEILING,
+  },
+  {
+    key: "enterprise200k",
+    name: "Enterprise 200k",
+    description: "Volume pricing for high-throughput users at around 200,000 checks a month.",
+    monthlyPriceGbp: 680,
+    minRequests: SELF_SERVE_CEILING,
+    includedRequestsCount: 200_000,
+    overagePence: 0.43,
+    maxRequests: ENTERPRISE_CEILING,
+  },
+  {
+    key: "enterpriseCustom",
+    name: "Enterprise",
+    description: "Bespoke pricing for the highest volumes, with an SLA and a named contact.",
+    monthlyPriceGbp: null,
+    minRequests: SELF_SERVE_CEILING,
+    includedRequestsCount: Number.POSITIVE_INFINITY,
+    overagePence: null,
+    maxRequests: Number.POSITIVE_INFINITY,
+    quoteOnly: true,
+  },
+];
+
+/**
+ * The EISCD data file licence: sold annually through a call, never metered
+ * and never self-serve (plan §6.7). £2,130 a year everywhere on the site.
+ */
+export const EISCD_PLAN = {
+  name: "EISCD Data File",
+  annualPriceGbp: 2130,
+  annualPrice: "£2,130",
+} as const;
