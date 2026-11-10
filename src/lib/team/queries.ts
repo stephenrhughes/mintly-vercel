@@ -4,7 +4,6 @@ import type { OrgRole } from "@/lib/nav";
 import { createClient } from "@/lib/supabase/server";
 
 import { personName } from "./operations";
-import type { InvitableRole } from "./rules";
 
 // The team page, read as the signed-in user so RLS limits it to their own
 // organisation (TEAM-02). Invitations are only visible to the owner (plan §4).
@@ -20,7 +19,7 @@ export type TeamMember = {
 export type PendingInvite = {
   id: string;
   email: string;
-  role: InvitableRole;
+  role: OrgRole;
   createdAt: Date;
   /** Null while held for review. */
   expiresAt: Date | null;
@@ -58,7 +57,7 @@ export async function getTeam(orgId: string, opts: { withInvites: boolean }): Pr
             {
               id: string;
               email: string;
-              role: InvitableRole;
+              role: OrgRole;
               created_at: string;
               expires_at: string | null;
             }[]

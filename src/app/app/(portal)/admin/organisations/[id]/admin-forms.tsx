@@ -9,7 +9,9 @@ import {
   selectClass,
   textareaClass,
 } from "@/components/admin/ui";
+import { useKeepForm } from "@/components/admin/use-keep-form";
 import { SubmitButton } from "@/components/forms/submit-button";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { money } from "@/lib/billing/format";
@@ -85,10 +87,11 @@ export function PlanChangeForm({
   );
   const [trial, setTrial] = useState("keep");
   const q = preview.quote;
+  const { onSubmit, pending } = useKeepForm(previewAction);
 
   return (
     <Section title="Change plan">
-      <form action={previewAction} className="grid gap-3 sm:grid-cols-2">
+      <form onSubmit={onSubmit} className="grid gap-3 sm:grid-cols-2">
         <div className="grid gap-1 sm:col-span-2">
           <Label htmlFor="priceId">Price</Label>
           <select id="priceId" name="priceId" defaultValue={currentPriceId} className={selectClass}>
@@ -142,9 +145,9 @@ export function PlanChangeForm({
           </select>
         </div>
         <div className="sm:col-span-2">
-          <SubmitButton variant="outline" size="sm" pendingLabel="Asking Stripe…">
-            Preview
-          </SubmitButton>
+          <Button type="submit" variant="outline" size="sm" disabled={pending}>
+            {pending ? "Asking Stripe…" : "Preview"}
+          </Button>
         </div>
       </form>
       <ActionResult state={preview} />

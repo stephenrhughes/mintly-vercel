@@ -21,12 +21,16 @@ export type RevealState = { value?: string; error?: string };
 // SUB-02, SUB-03: the API key value, read from API Gateway on demand. Only
 // owners and developers of an approved organisation get it, and only while
 // the subscription is active; it is never stored or put in the page HTML.
-export async function revealApiKey(): Promise<RevealState> {
+// Each product has its own key: the EISCD key is separate (plan §6.7).
+export async function revealApiKey(
+  product: "bank_checker" | "eiscd" = "bank_checker",
+): Promise<RevealState> {
   const user = await requireUser("/subscription");
   if (!canSeeKey(user.membership)) return { error: "You can't view the API key." };
+  if (product !== "bank_checker" && product !== "eiscd") return { error: "No such product." };
 
   const { current } = await getOrgSubscriptions(user.membership!.orgId);
-  const sub = current.find((s) => s.product === "bank_checker") ?? current[0];
+  const sub = current.find((s) => s.product === product);
   if (!sub?.apiKeyId || !describeSubscription(sub).active) {
     return { error: "Your subscription has no active API key." };
   }

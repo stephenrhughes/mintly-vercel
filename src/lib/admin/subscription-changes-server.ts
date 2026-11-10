@@ -8,6 +8,7 @@ import {
   ownerEmail,
   supabasePlanChangeRecords,
 } from "@/lib/billing/plan-change-server";
+import { money } from "@/lib/billing/format";
 import { planLabel } from "@/lib/billing/plan-name";
 import { syncSubscription } from "@/lib/billing/provision";
 import { provisionDeps } from "@/lib/billing/server";
@@ -58,6 +59,7 @@ export function toAdminPrice(price: Stripe.Price): AdminPrice {
         : null,
     product: meta.product,
     maxTeamSize: meta.maxTeamSize,
+    custom: meta.custom,
   };
 }
 
@@ -239,14 +241,25 @@ export async function loadAdminSubscriptionContext(
 }
 
 /** Prices an admin can choose: every active recurring price for the product. */
-export async function priceChoices(product: "bank_checker" | "eiscd"): Promise<AdminPrice[]> {
+export async function priceChoices(product?: "bank_checker" | "eiscd"): Promise<AdminPrice[]> {
   const stripe = requireStripe();
   const prices: AdminPrice[] = [];
   for await (const price of stripe.prices.list({ active: true, type: "recurring", limit: 100 })) {
     const p = toAdminPrice(price);
-    if (p.product === product) prices.push(p);
+    if (!product || p.product === product) prices.push(p);
   }
   return prices.sort(
     (a, b) => a.name.localeCompare(b.name) || (a.unitAmount ?? 0) - (b.unitAmount ?? 0),
   );
+}
+
+/** Every recurring price, labelled for the admin price pickers (ADM-11, ADM-12). */
+export async function priceOptions(): Promise<
+  Array<{ id: string; label: string; product: "bank_checker" | "eiscd" }>
+> {
+  return (await priceChoices()).map((p) => ({
+    id: p.id,
+    product: p.product,
+    label: `${p.name}: ${p.unitAmount === null ? "metered" : money(p.unitAmount, p.currency)}${p.recurring ? ` a ${p.recurring.count > 1 ? `${p.recurring.count} ` : ""}${p.recurring.interval}` : ""}${p.custom ? " [custom]" : ""}${p.active ? "" : " [inactive]"}`,
+  }));
 }

@@ -7,12 +7,11 @@ import { AuthCard } from "@/components/auth/auth-card";
 import { Button } from "@/components/ui/button";
 import { getCurrentUser } from "@/lib/auth/session";
 import { appPath } from "@/lib/hosts";
-import { roleLabels } from "@/lib/nav";
 import { siteConfig } from "@/lib/site";
 import { createServiceClient, getServiceKey } from "@/lib/supabase/admin";
 import { getSupabaseConfig } from "@/lib/supabase/config";
 import { type InviteDetails, lookupInvite } from "@/lib/team/operations";
-import { joinErrorMessage } from "@/lib/team/rules";
+import { inviteRolePhrase, joinErrorMessage } from "@/lib/team/rules";
 
 import { AcceptForm } from "./accept-form";
 
@@ -50,7 +49,7 @@ function Problem({ heading, message }: { heading: string; message: string }) {
 }
 
 const invitedLine = (invite: InviteDetails) =>
-  `${invite.inviterName ?? "Your colleague"} has invited you to join ${invite.orgName} on Mintly as a ${roleLabels[invite.role]}.`;
+  `${invite.inviterName ?? "Your colleague"} has invited you to join ${invite.orgName} on Mintly ${inviteRolePhrase(invite.role)}.`;
 
 // The invite link (plan §6.6, JOIN-01 to JOIN-06).
 async function Join({ params }: PageProps<"/app/join/[token]">) {

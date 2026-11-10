@@ -7,20 +7,21 @@ import { EmailLayout, text } from "./layout";
 export function TeamInviteEmail({
   orgName,
   inviterName,
-  roleLabel,
+  rolePhrase,
   joinUrl,
   expiresOn,
 }: {
   orgName: string;
   inviterName: string;
-  roleLabel: string;
+  /** "as a Developer", or "as its owner" (ADM-12). */
+  rolePhrase: string;
   joinUrl: string;
   expiresOn: string;
 }) {
   return (
     <EmailLayout preview={`${inviterName} has invited you to join ${orgName} on Mintly`}>
       <Text style={text}>
-        {inviterName} has invited you to join {orgName}&apos;s Mintly team as a {roleLabel}.
+        {inviterName} has invited you to join {orgName}&apos;s Mintly team {rolePhrase}.
       </Text>
       <Text style={text}>
         Mintly checks UK bank account details and sort codes. Accept the invite to use your

@@ -33,6 +33,7 @@ export type AdminPrice = {
   recurring: { interval: "day" | "week" | "month" | "year"; count: number } | null;
   product: Product;
   maxTeamSize: number | null;
+  custom?: boolean;
 };
 
 /** The trial end to send Stripe: unchanged, now, or a date. */

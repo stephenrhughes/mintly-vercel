@@ -5,6 +5,7 @@ import {
   inviteDomainProblem,
   inviteErrorMessage,
   inviteExpiryLabel,
+  inviteRolePhrase,
   isInvitableRole,
   joinErrorMessage,
   memberChangeProblem,
@@ -18,6 +19,14 @@ describe("canManageTeam (TEAM-04, TEAM-08)", () => {
     expect(canManageTeam("developer")).toBe(false);
     expect(canManageTeam("member")).toBe(false);
     expect(canManageTeam(null)).toBe(false);
+  });
+});
+
+describe("inviteRolePhrase (ADM-12)", () => {
+  it("names the role with the right article", () => {
+    expect(inviteRolePhrase("developer")).toBe("as a Developer");
+    expect(inviteRolePhrase("member")).toBe("as a Member");
+    expect(inviteRolePhrase("owner")).toBe("as its owner");
   });
 });
 

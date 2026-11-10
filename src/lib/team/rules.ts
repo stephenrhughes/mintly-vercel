@@ -75,7 +75,9 @@ export type TeamErrorHint =
   | "wrong_email"
   | "not_subscribed"
   | "owner_elsewhere"
-  | "needs_consent";
+  | "needs_consent"
+  /** An owner invite, but the organisation already has an owner (ADM-12). */
+  | "has_owner";
 
 const hints = new Set<string>([
   "already_member",
@@ -90,6 +92,7 @@ const hints = new Set<string>([
   "not_subscribed",
   "owner_elsewhere",
   "needs_consent",
+  "has_owner",
 ]);
 
 export function teamErrorHint(error: { hint?: string | null } | null): TeamErrorHint | null {
@@ -118,6 +121,8 @@ export function inviteErrorMessage(
       return "That person already has an invite. You can resend it from the list below.";
     case "team_full":
       return teamFullFromDetail(detail);
+    case "has_owner":
+      return "This organisation already has an owner.";
     default:
       return null;
   }
@@ -154,6 +159,8 @@ export function joinErrorMessage(
       return input.detail ? teamFullFromDetail(input.detail) : "Your team is full.";
     case "already_invited":
       return "That person already has an invite.";
+    case "has_owner":
+      return `${org} already has an owner. Contact us if you should be its owner.`;
   }
 }
 
@@ -164,4 +171,11 @@ export function inviteExpiryLabel(expiresAt: Date | null, now: Date): string {
   if (ms <= 0) return "Expired";
   const days = Math.ceil(ms / 86_400_000);
   return days === 1 ? "Expires within a day" : `Expires in ${days} days`;
+}
+
+/** "as a Developer", "as a Member", or "as its owner" (ADM-12), for invites. */
+export function inviteRolePhrase(role: OrgRole): string {
+  return role === "owner"
+    ? "as its owner"
+    : `as a ${role === "developer" ? "Developer" : "Member"}`;
 }

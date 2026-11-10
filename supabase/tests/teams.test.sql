@@ -78,7 +78,7 @@ select is(
 );
 select throws_ok(
   $$ select public.create_invitation('10000000-0000-0000-0000-00000000000b', 'x@globex.test', 'owner', 'hash-owner', null, true) $$,
-  '23514', null, 'nobody is invited as owner'
+  'P0001', 'has an owner', 'nobody is invited as owner while the organisation has one'
 );
 
 -- Expired invites free their seat.

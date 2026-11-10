@@ -76,6 +76,11 @@ async function Organisations({ searchParams }: PageProps<"/app/admin/organisatio
       <PageHeader
         title={title}
         description="Every customer, with the database and Stripe side by side. Drift means they disagree."
+        action={
+          <Button asChild>
+            <Link href={appPath("/admin/customers/new")}>Set up a customer</Link>
+          </Button>
+        }
       />
 
       {!stripeAvailable ? (

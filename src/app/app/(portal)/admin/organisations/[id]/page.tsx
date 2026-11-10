@@ -105,7 +105,7 @@ async function Organisation({ params }: PageProps<"/app/admin/organisations/[id]
             interval: p.recurring
               ? `${p.recurring.count > 1 ? `${p.recurring.count} ` : ""}${p.recurring.interval}`
               : null,
-            custom: false,
+            custom: p.custom ?? false,
           })),
         ] as const;
       }),

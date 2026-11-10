@@ -26,7 +26,8 @@ import { hashInviteToken, isPlausibleToken, newInviteToken } from "./tokens";
 export type InviteEmail = {
   orgName: string;
   inviterName: string;
-  role: InvitableRole;
+  /** owner: an admin-created organisation's first owner (ADM-12). */
+  role: OrgRole;
   token: string;
   expiresAt: Date;
 };
@@ -119,6 +120,41 @@ export async function inviteMember(
     orgName: input.org.orgName,
     inviterName: input.actor.name,
     role: input.role,
+    token,
+    expiresAt: expiry(deps.now?.() ?? new Date()),
+  });
+}
+
+/**
+ * ADM-12: an admin invites the first owner of an organisation they set up.
+ * Allowed only while it has no owner; the owner takes a seat like anyone.
+ */
+export async function inviteOwner(
+  deps: TeamDeps,
+  input: { actor: Actor; org: OrgContext; email: string },
+): Promise<TeamResult> {
+  const email = input.email.trim().toLowerCase();
+  if (!emailSchema.safeParse(email).success) {
+    return { ok: false, error: "Enter a valid email address", field: "email" };
+  }
+  const token = newInviteToken();
+  const { error } = await deps.db.rpc("create_invitation", {
+    p_org: input.org.orgId,
+    p_email: email,
+    p_role: "owner",
+    p_token_hash: hashInviteToken(token),
+    p_invited_by: input.actor.id,
+    p_send: true,
+  });
+  if (error) {
+    const message = inviteErrorMessage(teamErrorHint(error), error.details);
+    if (message) return { ok: false, error: message };
+    throw new Error(`creating the owner invite failed: ${error.message}`);
+  }
+  return sendOrWarn(deps, email, {
+    orgName: input.org.orgName,
+    inviterName: input.actor.name,
+    role: "owner",
     token,
     expiresAt: expiry(deps.now?.() ?? new Date()),
   });
@@ -373,7 +409,7 @@ export type InviteDetails = {
   orgId: string;
   orgName: string;
   email: string;
-  role: InvitableRole;
+  role: OrgRole;
   inviterName: string | null;
   /** Set when the invite can't be accepted, whoever opens it. */
   problem: Extract<TeamErrorHint, "accepted" | "revoked" | "held" | "expired"> | null;
@@ -395,7 +431,7 @@ export async function lookupInvite(
     .maybeSingle<{
       org_id: string;
       email: string;
-      role: InvitableRole;
+      role: OrgRole;
       invited_by: string | null;
       sent_at: string | null;
       expires_at: string | null;

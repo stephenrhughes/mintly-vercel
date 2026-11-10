@@ -285,6 +285,19 @@ async function SubscriptionCard({
           />
         </section>
       </CardContent>
+      {sub.product === "eiscd" ? (
+        // plan §6.7: the EISCD card links to its own docs.
+        <CardFooter className="flex flex-wrap gap-3 border-t">
+          <Button asChild variant="outline" size="sm">
+            <a href={`${siteConfig.canonicalUrl}/eiscd-docs`} target="_blank" rel="noreferrer">
+              <ExternalLink aria-hidden /> EISCD API documentation
+            </a>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            To change your EISCD licence, email {siteConfig.supportEmail}.
+          </p>
+        </CardFooter>
+      ) : null}
       {canManageBilling(membership) && sub.product === "bank_checker" && !sub.expired ? (
         // PLAN-01: the owner changes plan themselves.
         <CardFooter className="border-t">
@@ -344,7 +357,7 @@ function KeySection({
   }
   return (
     <>
-      <ApiKey />
+      <ApiKey product={sub.product} />
       {retiringUntil ? (
         <p className="text-sm text-muted-foreground">
           Your previous key keeps working until{" "}
@@ -363,7 +376,8 @@ function KeySection({
           it in the <code>x-api-key</code> header. If it leaks, rotate it below.
         </AlertDescription>
       </Alert>
-      <RotateKeyForm />
+      {/* KEY-01 covers the Bank Account Checker key; EISCD keys are rotated by Mintly. */}
+      {sub.product === "bank_checker" ? <RotateKeyForm /> : null}
     </>
   );
 }

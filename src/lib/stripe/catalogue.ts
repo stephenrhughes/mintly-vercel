@@ -38,3 +38,8 @@ export async function getPrice(id: string): Promise<Stripe.Price> {
   const cached = cache?.prices.find((price) => price.id === id);
   return cached ?? requireStripe().prices.retrieve(id);
 }
+
+/** Forget the cached catalogue, after a price is created (ADM-12). */
+export function clearPriceCache() {
+  cache = null;
+}

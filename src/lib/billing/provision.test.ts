@@ -437,7 +437,43 @@ describe("refusals", () => {
     expect(t.store.events.get("evt_checkout")?.processed).toBe(false);
   });
 
-  it("ignores EISCD subscriptions (plan §6.7)", async () => {
+  it("provisions an EISCD subscription for an organisation an admin set up (plan §6.7)", async () => {
+    t.subs.set("sub_1", trial());
+    await handleStripeEvent(t.deps, checkoutEvent());
+    const eiscd = price({
+      id: "price_eiscd",
+      metadata: { product: "eiscd", usagePlanId: "plan_eiscd" },
+    });
+    t.subs.set(
+      "sub_e",
+      subscription({
+        id: "sub_e",
+        items: {
+          data: [
+            {
+              id: "si_e",
+              object: "subscription_item",
+              current_period_end: 1_800_000_000,
+              price: eiscd,
+            },
+          ],
+        },
+      }),
+    );
+    const outcome = await handleStripeEvent(
+      t.deps,
+      subscriptionEvent("evt_e", "customer.subscription.created", "sub_e"),
+    );
+    expect(outcome.status === "handled" && outcome.result.status).toBe("synced");
+    const key = [...t.store.keys.values()].find((k) => k.product === "eiscd");
+    expect(key).toMatchObject({
+      enabled: true,
+      usagePlanId: "plan_eiscd",
+      stripeSubscriptionItemId: "si_e",
+    });
+  });
+
+  it("ignores EISCD subscriptions for customers with no organisation (plan §6.7)", async () => {
     t.subs.set("sub_1", trial({ price: price({ metadata: { product: "eiscd" } }) }));
     const outcome = await handleStripeEvent(t.deps, checkoutEvent());
     expect(outcome.status === "handled" && outcome.result).toEqual({

@@ -77,7 +77,15 @@ async function Admin() {
 
   return (
     <div className="grid gap-8">
-      <PageHeader title={title} description="Manage Mintly customers, plans and settings." />
+      <PageHeader
+        title={title}
+        description="Manage Mintly customers, plans and settings."
+        action={
+          <Button asChild>
+            <Link href={appPath("/admin/customers/new")}>Set up a customer</Link>
+          </Button>
+        }
+      />
 
       <Card className={pending.count > 0 ? "border-primary/40" : undefined}>
         <CardHeader>
