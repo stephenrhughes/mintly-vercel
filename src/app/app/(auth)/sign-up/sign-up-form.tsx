@@ -13,14 +13,19 @@ import { signUp } from "../actions";
 
 export function SignUpForm({
   next,
+  defaultEmail,
   termsUrl,
   privacyUrl,
 }: {
   next: string;
+  defaultEmail?: string;
   termsUrl: string;
   privacyUrl: string;
 }) {
-  const [state, action] = useActionState<FormState, FormData>(signUp, {});
+  const [state, action] = useActionState<FormState, FormData>(
+    signUp,
+    defaultEmail ? { values: { email: defaultEmail } } : {},
+  );
   const errors = state.fieldErrors ?? {};
   const values = state.values ?? {};
 

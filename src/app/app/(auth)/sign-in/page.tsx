@@ -18,6 +18,8 @@ async function SignIn({ searchParams }: PageProps<"/app/sign-in">) {
   const next = safeNextPath(typeof params.next === "string" ? params.next : null);
   const error = typeof params.error === "string" ? linkErrors[params.error] : undefined;
   const nextQuery = next === "/" ? "" : `?next=${encodeURIComponent(next)}`;
+  // Pre-filled from an invite (JOIN-01) or the SSO lookup (SSO-03).
+  const email = typeof params.email === "string" ? params.email.slice(0, 254) : undefined;
 
   return (
     <AuthCard
@@ -34,7 +36,12 @@ async function SignIn({ searchParams }: PageProps<"/app/sign-in">) {
         </>
       }
     >
-      <SignInForm next={next} linkError={error} forgotHref={appPath("/forgot-password")} />
+      <SignInForm
+        next={next}
+        linkError={error}
+        defaultEmail={email}
+        forgotHref={appPath("/forgot-password")}
+      />
     </AuthCard>
   );
 }

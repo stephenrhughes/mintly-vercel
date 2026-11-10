@@ -266,7 +266,7 @@ export function planChangeDeps(): PlanChangeDeps {
  */
 export async function loadChangeContext(orgId: string): Promise<ChangeContext | null> {
   const db = createServiceClient();
-  const [{ data: sub, error }, { data: org }, { count }] = await Promise.all([
+  const [{ data: sub, error }, { data: org }, { data: seats }] = await Promise.all([
     db
       .from("subscriptions")
       .select("stripe_subscription_id, stripe_price_id, status, trialing, cancel_at, extra_users")
@@ -286,8 +286,8 @@ export async function loadChangeContext(orgId: string): Promise<ChangeContext | 
       .select("review_status")
       .eq("id", orgId)
       .single<{ review_status: ReviewStatus }>(),
-    // Seats used: members now; pending invites join this in phase 4 (TEAM-03).
-    db.from("memberships").select("user_id", { count: "exact", head: true }).eq("org_id", orgId),
+    // Seats used: members plus open invites (TEAM-03, PLAN-05).
+    db.rpc("org_seat_usage", { p_org: orgId }),
   ]);
   if (error) throw new Error(`reading the subscription failed: ${error.message}`);
   if (!sub || !org) return null;
@@ -307,7 +307,10 @@ export async function loadChangeContext(orgId: string): Promise<ChangeContext | 
     orgId,
     subscriptionId: sub.stripe_subscription_id,
     current,
-    team: { seatsUsed: Math.max(1, count ?? 1), extraUsers: sub.extra_users },
+    team: {
+      seatsUsed: seatsUsed(seats),
+      extraUsers: sub.extra_users,
+    },
     // PLAN-06, PLAN-07: the recent rate from the nightly usage sync.
     monthlyChecks: await projectedMonthlyChecks(orgId).catch((error: unknown) => {
       console.error("reading usage for the plan change failed", error);
@@ -380,4 +383,10 @@ export async function adoptAddedCard(input: {
     });
   }
   return true;
+}
+
+/** Members plus open invites, from org_seat_usage (TEAM-03); at least the owner. */
+function seatsUsed(rows: unknown): number {
+  const row = (rows as { members: number; pending_invites: number }[] | null)?.[0];
+  return Math.max(1, (row?.members ?? 1) + (row?.pending_invites ?? 0));
 }
