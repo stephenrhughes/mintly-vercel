@@ -34,6 +34,8 @@ export type ReviewDeps = {
   /** Re-syncs a subscription, which creates, enables or disables the key. */
   syncSubscription(subscriptionId: string): Promise<void>;
   notify: ReviewNotifier;
+  /** Sends invites held while the organisation was pending (plan §6.11). Returns how many. */
+  sendHeldInvites(orgId: string, orgName: string): Promise<number>;
   now?: () => Date;
 };
 
@@ -290,6 +292,10 @@ export async function approve(
   }
 
   await syncKey(deps, ctx, warnings);
+
+  await attempt(warnings, "Sending held team invites", async () => {
+    await deps.sendHeldInvites(ctx.orgId, ctx.orgName);
+  });
 
   const owner = ctx.owner;
   if (owner) {

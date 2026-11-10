@@ -8,6 +8,8 @@ import { appUrl } from "@/lib/hosts";
 import { siteConfig } from "@/lib/site";
 import { requireStripe } from "@/lib/stripe/client";
 import { createServiceClient } from "@/lib/supabase/admin";
+import { sendHeldInvites } from "@/lib/team/operations";
+import { teamDeps } from "@/lib/team/server";
 import {
   ReviewApprovedEmail,
   reviewApprovedSubject,
@@ -90,5 +92,6 @@ export function reviewDeps(): ReviewDeps {
       },
       addToMarketingList: addContact,
     },
+    sendHeldInvites: (orgId, orgName) => sendHeldInvites(teamDeps(), { orgId, orgName }),
   };
 }

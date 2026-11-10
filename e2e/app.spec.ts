@@ -188,3 +188,52 @@ test("the check proxy refuses cross-site and signed-out requests (plan §6.2)", 
 test("the usage sync refuses calls without the cron secret (plan §8)", async ({ request }) => {
   expect((await request.get("/api/cron/usage-sync")).status()).toBe(401);
 });
+
+test("the team page needs a signed-in user (plan §6.6)", async ({ page }) => {
+  await page.goto("/app/team");
+  await expect(page).toHaveURL(/\/app\/sign-in\?next=%2Fteam$/);
+});
+
+test("an invite link opens in the auth layout and explains a bad link (JOIN-06, LAY-01)", async ({
+  page,
+}) => {
+  const response = await page.goto("/app/join/not-a-real-invite-token-0000");
+  expect(response?.status()).toBe(200);
+  await expect(page.getByRole("heading", { name: "Invite not found" })).toBeVisible();
+  await expect(page.getByText(/This invite link isn't valid/)).toBeVisible();
+  await expect(page.getByRole("link", { name: "Back to mintly.uk" })).toBeVisible();
+  await expect(page.getByRole("link", { name: "Products" })).toHaveCount(0);
+});
+
+test("old invite links redirect to the new join page (plan §8)", async ({ page }) => {
+  await page.goto("/join?invite=3f2b9c1e-8a4d-4c4e-9b8a-1d2e3f4a5b6c");
+  await expect(page).toHaveURL(/\/app\/join\/3f2b9c1e-8a4d-4c4e-9b8a-1d2e3f4a5b6c$/);
+  await expect(page.getByRole("heading", { name: "Invite not found" })).toBeVisible();
+});
+
+test("sign-in and sign-up keep an invite's email and return to it (JOIN-01)", async ({ page }) => {
+  const query = "?next=%2Fjoin%2Fabcdefghijklmnop&email=mia%40acme.example";
+  await page.goto(`/app/sign-in${query}`);
+  await expect(page.getByLabel("Work email")).toHaveValue("mia@acme.example");
+  await expect(page.locator('input[name="next"]')).toHaveValue("/join/abcdefghijklmnop");
+
+  await page.goto(`/app/sign-up${query}`);
+  await expect(page.getByLabel("Work email")).toHaveValue("mia@acme.example");
+  await expect(page.getByText(/Create an account to join your team/)).toBeVisible();
+});
+
+test("sign-in offers SSO, and falls back to the password form (SSO-01, SSO-03)", async ({
+  page,
+}) => {
+  await page.goto("/app/sign-in");
+  await page.getByRole("button", { name: "Sign in with SSO" }).click();
+  const sso = page.getByRole("form", { name: "Sign in with SSO" });
+  await sso.getByLabel("Work email for SSO").fill("sam@acme.example");
+  await sso.getByRole("button", { name: "Continue with SSO" }).click();
+  // Without a Supabase project (as in CI) the look-up is unavailable.
+  await expect(sso.getByText(/Sign-in isn't available on this deployment yet/)).toBeVisible();
+
+  await page.goto("/app/sign-in?sso=none&email=sam%40acme.example");
+  await expect(page.getByText(/doesn't sign in to Mintly with SSO/)).toBeVisible();
+  await expect(page.getByLabel("Work email", { exact: true })).toHaveValue("sam@acme.example");
+});

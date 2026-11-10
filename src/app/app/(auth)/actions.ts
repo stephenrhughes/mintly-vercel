@@ -1,6 +1,6 @@
 "use server";
 
-import { cookies } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
 import { z } from "zod";
@@ -17,9 +17,11 @@ import {
   PLAN_INTENT_COOKIE,
   planIntentCookieOptions,
 } from "@/lib/billing/plan-intent";
-import { appPath, safeNextPath } from "@/lib/hosts";
+import { verifyCaptcha } from "@/lib/captcha";
+import { appPath, getAppUrl, safeNextPath } from "@/lib/hosts";
 import { legalDocuments } from "@/lib/legal";
 import { getSupabaseConfig } from "@/lib/supabase/config";
+import { createServiceClient, getServiceKey } from "@/lib/supabase/admin";
 import { createClient } from "@/lib/supabase/server";
 
 const text = (formData: FormData, name: string) => String(formData.get(name) ?? "").trim();
@@ -269,4 +271,67 @@ export async function verifyMfa(_state: FormState, formData: FormData): Promise<
   const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: factor.id, code });
   if (error) return { error: authErrorMessage(error) };
   redirect(appPath(next));
+}
+
+// SSO-01 to SSO-03: "Sign in with SSO". The server checks the captcha
+// (SSO-02), then looks up the email's domain in sso_domains. A domain with
+// a tenant goes to its identity provider; any other drops back to password
+// sign-in with the email filled in. Supabase returns through the auth
+// callback, which links a first-time user to the tenant's organisation
+// (SSO-04, SSO-05).
+export async function signInWithSso(_state: FormState, formData: FormData): Promise<FormState> {
+  const address = text(formData, "email").toLowerCase();
+  const next = safeNextPath(text(formData, "next"));
+  const values = { email: address };
+  if (!email.safeParse(address).success) {
+    return { fieldErrors: { email: "Enter your work email address" }, values };
+  }
+  const supabase = await client();
+  if (!supabase || !getServiceKey()) return { error: notConfiguredMessage, values };
+
+  const requestHeaders = await headers();
+  const host = requestHeaders.get("host");
+  const captcha = await verifyCaptcha(text(formData, "captcha"), {
+    action: "sso",
+    hostnames: [new URL(getAppUrl()).hostname, ...(host ? [host] : [])],
+    remoteIp: requestHeaders.get("x-real-ip"),
+  });
+  if (!captcha.ok) {
+    return {
+      error:
+        captcha.reason === "rejected" || captcha.reason === "missing"
+          ? "We couldn't confirm you're not a robot. Reload the page and try again."
+          : "SSO sign-in isn't available right now. Sign in with your password, or try again later.",
+      values,
+    };
+  }
+
+  const { data: providerId, error: lookupError } = await createServiceClient().rpc(
+    "sso_provider_for_email",
+    { p_email: address },
+  );
+  if (lookupError) {
+    console.error("sso_provider_for_email failed", lookupError.message);
+    return { error: "Something went wrong. Please try again.", values };
+  }
+  if (typeof providerId !== "string") {
+    redirect(
+      appPath(
+        `/sign-in?sso=none&email=${encodeURIComponent(address)}${next === "/" ? "" : `&next=${encodeURIComponent(next)}`}`,
+      ),
+    );
+  }
+
+  const { data, error } = await supabase.auth.signInWithSSO({
+    providerId,
+    options: { redirectTo: authCallbackUrl(next) },
+  });
+  if (error || !data?.url) {
+    console.error("signInWithSSO failed", error?.code, error?.message);
+    return {
+      error: "We couldn't reach your organisation's sign-in page. Please try again.",
+      values,
+    };
+  }
+  redirect(data.url);
 }

@@ -25,6 +25,13 @@ Still to do for phase 0: Vercel staging environment and the AWS OIDC roles.
 - Authenticator-app MFA, required for the admin area (`SEC-01`)
 - `organisations` and `memberships` with RLS, the `auth_org_id()` and `auth_role()` helpers, the sign-up denylist and its Auth hook, and pgTAP tests for each role
 
+**Phase 4: teams and SSO** (plan §6.1, §6.6). In place:
+
+- `/team` for everyone, with seats used against the limit; the owner invites by email with a role (Developer or Member), resends, withdraws, removes and changes roles (`TEAM-*`)
+- Invites expire after 14 days, are held while a trial awaits review and sent on approval, and are checked against the seat limit in the database (`TEAM-03`, `TEAM-05`)
+- `/join/<token>`: sign in or sign up with the invited email, and an explicit confirmation before anyone moves from another organisation (`JOIN-*`). Old `/join?invite=` links redirect
+- **Sign in with SSO** on the sign-in page, behind reCAPTCHA v3; first-time SSO users join their tenant's organisation (`SSO-01`–`SSO-05`). Tenants are set up as in [`docs/supabase-setup.md`](./docs/supabase-setup.md) §6 until the admin page arrives in phase 5
+
 ## Getting started
 
 Requirements: Node 22 (`nvm use`), and Docker for the local database.

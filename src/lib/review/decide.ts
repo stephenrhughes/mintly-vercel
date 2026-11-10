@@ -35,17 +35,26 @@ export function createReviewOps(db: SupabaseClient): ReviewOps {
     async decide(input: NewTrialInput) {
       const domain = normaliseDomain(input.ownerEmail.split("@").pop());
 
-      const [trusted, approvedOrg, dns] = await Promise.all([
+      const [trusted, approvedOrg, sso, dns] = await Promise.all([
         domain
           ? db.from("trusted_domains").select("domain").eq("domain", domain).maybeSingle()
           : Promise.resolve({ data: null, error: null }),
         domain
           ? db.rpc("approved_org_for_domain", { p_domain: domain })
           : Promise.resolve({ data: null, error: null }),
+        domain
+          ? db
+              .from("sso_domains")
+              .select("domain")
+              .eq("domain", domain)
+              .eq("enabled", true)
+              .maybeSingle()
+          : Promise.resolve({ data: null, error: null }),
         domain ? dnsSignals(domain) : Promise.resolve({ mx: null, website: null }),
       ]);
       if (trusted.error)
         throw new Error(`reading trusted domains failed: ${trusted.error.message}`);
+      if (sso.error) throw new Error(`reading SSO domains failed: ${sso.error.message}`);
       if (approvedOrg.error) {
         throw new Error(`checking approved organisations failed: ${approvedOrg.error.message}`);
       }
@@ -53,8 +62,7 @@ export function createReviewOps(db: SupabaseClient): ReviewOps {
       const decision = decideReview({
         trustedDomain: Boolean(trusted.data),
         approvedOrgDomain: Boolean(approvedOrg.data),
-        // SSO tenants (sso_domains) arrive with phase 4.
-        ssoDomain: false,
+        ssoDomain: Boolean(sso.data),
       });
 
       const signals: SignupSignals = {

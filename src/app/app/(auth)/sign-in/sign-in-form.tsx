@@ -13,13 +13,18 @@ import { signIn } from "../actions";
 export function SignInForm({
   next,
   linkError,
+  defaultEmail,
   forgotHref,
 }: {
   next: string;
   linkError?: string;
+  defaultEmail?: string;
   forgotHref: string;
 }) {
-  const [state, action] = useActionState<FormState, FormData>(signIn, { error: linkError });
+  const [state, action] = useActionState<FormState, FormData>(signIn, {
+    error: linkError,
+    values: defaultEmail ? { email: defaultEmail } : undefined,
+  });
 
   return (
     <form action={action} className="grid gap-5">

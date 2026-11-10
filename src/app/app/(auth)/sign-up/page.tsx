@@ -21,14 +21,19 @@ async function SignUp({ searchParams }: PageProps<"/app/sign-up">) {
   const next = safeNextPath(typeof params.next === "string" ? params.next : null);
   const nextQuery = next === "/" ? "" : `?next=${encodeURIComponent(next)}`;
   const intent = intentFromNext(next);
+  // Joining a team rather than starting a trial (JOIN-01).
+  const joining = next.startsWith("/join/");
+  const email = typeof params.email === "string" ? params.email.slice(0, 254) : undefined;
 
   return (
     <AuthCard
       title={title}
       description={
-        intent
-          ? `You're starting a free trial of the ${PLANS[intent.tier].name}. No card needed.`
-          : description
+        joining
+          ? "Create an account to join your team. Use the email address the invite was sent to."
+          : intent
+            ? `You're starting a free trial of the ${PLANS[intent.tier].name}. No card needed.`
+            : description
       }
       footer={
         <>
@@ -44,6 +49,7 @@ async function SignUp({ searchParams }: PageProps<"/app/sign-up">) {
     >
       <SignUpForm
         next={next}
+        defaultEmail={email}
         termsUrl={legalDocuments.terms.url}
         privacyUrl={legalDocuments.privacy.url}
       />

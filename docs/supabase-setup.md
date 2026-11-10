@@ -80,3 +80,48 @@ update public.profiles set is_mintly_admin = true where email = 'someone@mintly.
 ```
 
 They'll be asked to set up an authenticator app the first time they open `/admin`.
+
+## 6. Add an SSO tenant (SAML)
+
+SAML SSO needs a paid Supabase plan (plan §13.7). Until the admin SSO page arrives (phase 5), a tenant is set up in two steps (`SSO-07`).
+
+**1. Register the identity provider** with the Supabase CLI, logged in to the project (`npx supabase login`, then `npx supabase link --project-ref <ref>`). Give the customer's IT team these settings for their IdP:
+
+- ACS URL: `https://<project-ref>.supabase.co/auth/v1/sso/saml/acs`
+- Entity ID / metadata: `https://<project-ref>.supabase.co/auth/v1/sso/saml/metadata`
+
+Map their name attributes to the keys the profile trigger reads, in an attribute mapping file such as `acme-attributes.json`:
+
+```json
+{
+  "keys": {
+    "email": { "name": "email" },
+    "first_name": { "name": "given_name" },
+    "last_name": { "name": "family_name" }
+  }
+}
+```
+
+The attribute names (`given_name`, …) are the ones the customer's IdP sends; ask them, or read them from a test assertion.
+
+```bash
+npx supabase sso add --type saml --project-ref <ref> \
+  --metadata-url 'https://idp.example.com/saml/metadata' \
+  --domains acme.co.uk \
+  --attribute-mapping-file acme-attributes.json
+```
+
+Note the provider ID it prints (`npx supabase sso list --project-ref <ref>` shows it again).
+
+**2. Map the domain to the organisation** in the SQL editor. Users from the domain then join it on their first SSO sign-in, as Members unless `default_role` says otherwise (`SSO-05`). They join only while the organisation has a live subscription, and seat limits aren't enforced for them.
+
+```sql
+insert into public.sso_domains (domain, org_id, supabase_sso_provider_id, default_role)
+values ('acme.co.uk', '<organisation id>', '<provider id>', 'member');
+```
+
+To stop SSO for a domain without deleting it: `update public.sso_domains set enabled = false where domain = 'acme.co.uk';`
+
+**Test tenant:** a free developer IdP (for example a Microsoft Entra test tenant, or a mock SAML IdP such as `mocksaml.com`) can stand in for a customer. Register it as above with a test domain, map it to a staging organisation with a subscription, then use **Sign in with SSO** on the sign-in page.
+
+The sign-in page checks a reCAPTCHA v3 token before looking a domain up (`SSO-02`). Set `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` and `RECAPTCHA_SECRET_KEY` in Vercel (see `.env.example`); production refuses SSO look-ups without them.

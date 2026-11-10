@@ -20,6 +20,8 @@ import { describeSubscription } from "@/lib/billing/status";
 import { appPath } from "@/lib/hosts";
 import { orgStatusLabel } from "@/lib/nav";
 import { siteConfig } from "@/lib/site";
+import { getSeatUsage } from "@/lib/team/queries";
+import { canManageTeam } from "@/lib/team/rules";
 
 export const metadata: Metadata = { title: "Overview" };
 
@@ -41,9 +43,17 @@ async function Overview({ searchParams }: PageProps<"/app">) {
     ? describeSubscription(sub, { pendingReview: membership?.reviewStatus === "pending_review" })
     : null;
   const planName = sub ? await planNameFor(sub.stripePriceId) : null;
+  // NAV-20: owners are prompted to invite someone until the team has two.
+  const seats =
+    membership && canManageTeam(membership.role)
+      ? await getSeatUsage(membership.orgId).catch((error: unknown) => {
+          console.error("reading seats failed", error);
+          return null;
+        })
+      : null;
 
   // A short checklist of next steps (NAV-20). Later phases add a first
-  // check, a team member and a billing contact.
+  // check and a billing contact.
   const steps = [
     {
       done: Boolean(sub && !sub.expired),
@@ -58,6 +68,16 @@ async function Overview({ searchParams }: PageProps<"/app">) {
             title: "Get your API key",
             description: "Copy your key from the subscription page and make your first call.",
             href: appPath("/subscription#api-key"),
+          },
+        ]
+      : []),
+    ...(seats
+      ? [
+          {
+            done: seats.members + seats.pendingInvites > 1,
+            title: "Invite a team member",
+            description: "Colleagues share your subscription, each with their own login.",
+            href: appPath("/team"),
           },
         ]
       : []),
@@ -81,6 +101,21 @@ async function Overview({ searchParams }: PageProps<"/app">) {
         title="Overview"
         description={user.firstName ? `Welcome, ${user.firstName}.` : "Welcome to Mintly."}
       />
+
+      {params.joined === "1" && membership ? (
+        <Alert variant="success">
+          <CircleCheck aria-hidden />
+          <AlertDescription className="text-secondary-foreground">
+            <p>
+              Welcome to Mintly! You&apos;ve joined {membership.orgName}.{" "}
+              <Link href={appPath("/tools")} className="font-medium underline">
+                Go to Tools
+              </Link>{" "}
+              to check bank details.
+            </p>
+          </AlertDescription>
+        </Alert>
+      ) : null}
 
       {params.password === "updated" ? (
         <Alert variant="success">
