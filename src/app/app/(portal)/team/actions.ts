@@ -1,9 +1,11 @@
 "use server";
 
 import { refresh } from "next/cache";
+import { redirect } from "next/navigation";
 
 import type { FormState } from "@/lib/auth/errors";
 import { type AppUser, requireUser } from "@/lib/auth/session";
+import { appPath } from "@/lib/hosts";
 import {
   type Actor,
   changeRole,
@@ -81,17 +83,26 @@ export async function resend(_state: FormState, formData: FormData): Promise<For
   );
 }
 
+// The row goes away on success, so the confirmation is shown by the page.
 export async function revoke(_state: FormState, formData: FormData): Promise<FormState> {
-  return run(formData, (ctx) =>
+  const state = await run(formData, (ctx) =>
     revokeInvite(teamDeps(), { org: ctx.org, inviteId: text(formData, "inviteId") }),
   );
+  if (state.message) redirect(appPath("/team?done=withdrawn"));
+  return state;
 }
 
 export async function remove(_state: FormState, formData: FormData): Promise<FormState> {
   if (formData.get("confirm") !== "on") return { error: "Tick the box to confirm." };
-  return run(formData, (ctx) =>
-    removeMember(teamDeps(), { ...ctx, userId: text(formData, "userId") }),
-  );
+  let wasDeveloper = false;
+  const state = await run(formData, async (ctx) => {
+    const result = await removeMember(teamDeps(), { ...ctx, userId: text(formData, "userId") });
+    wasDeveloper = result.ok && Boolean(result.warning);
+    return result;
+  });
+  if (state.message)
+    redirect(appPath(`/team?done=${wasDeveloper ? "removed-developer" : "removed"}`));
+  return state;
 }
 
 export async function setRole(_state: FormState, formData: FormData): Promise<FormState> {

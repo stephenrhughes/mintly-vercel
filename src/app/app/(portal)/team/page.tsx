@@ -1,4 +1,4 @@
-import { CircleAlert, Users } from "lucide-react";
+import { CircleAlert, CircleCheck, Users } from "lucide-react";
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
@@ -22,18 +22,27 @@ export const metadata: Metadata = { title: "Team" };
 
 const title = "Team";
 
-export default function TeamPage() {
+export default function TeamPage(props: PageProps<"/app/team">) {
   return (
     <Suspense fallback={<PageHeader title={title} />}>
-      <Team />
+      <Team {...props} />
     </Suspense>
   );
 }
 
+// Confirmations for changes that remove the row they were made from.
+const doneText: Record<string, string> = {
+  withdrawn: "The invite has been withdrawn. Its link no longer works.",
+  removed: "They've been removed from the team. They keep their login but lose access.",
+  "removed-developer":
+    "They've been removed from the team. Developers can see the API key: if they may have kept a copy, rotate the key from the Subscription page.",
+};
+
 // TEAM-02, TEAM-03: everyone sees the team and the seats; only the owner
 // changes it (plan §3, §6.6).
-async function Team() {
-  const user = await requireUser("/team");
+async function Team({ searchParams }: PageProps<"/app/team">) {
+  const [user, params] = await Promise.all([requireUser("/team"), searchParams]);
+  const done = typeof params.done === "string" ? doneText[params.done] : undefined;
   const membership = user.membership;
 
   if (!membership) {
@@ -81,6 +90,25 @@ async function Team() {
         }
       />
 
+      {done ? (
+        <Alert variant="success">
+          <CircleCheck aria-hidden />
+          <AlertDescription className="text-secondary-foreground">
+            <p>
+              {done}
+              {params.done === "removed-developer" ? (
+                <>
+                  {" "}
+                  <Link href={appPath("/subscription#api-key")} className="font-medium underline">
+                    Go to Subscription
+                  </Link>
+                </>
+              ) : null}
+            </p>
+          </AlertDescription>
+        </Alert>
+      ) : null}
+
       {isOwner && full ? (
         <Alert>
           <CircleAlert aria-hidden />
@@ -102,7 +130,7 @@ async function Team() {
         </Alert>
       ) : null}
 
-      {isOwner && canInvite && !full ? (
+      {isOwner && canInvite ? (
         <Card>
           <CardHeader>
             <CardTitle>Invite a colleague</CardTitle>
@@ -113,7 +141,7 @@ async function Team() {
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <InviteForm domain={emailDomain(user.email)} />
+            <InviteForm domain={emailDomain(user.email)} full={full} />
           </CardContent>
         </Card>
       ) : null}

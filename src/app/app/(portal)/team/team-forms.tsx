@@ -16,12 +16,16 @@ const selectClass =
   "h-9 rounded-md border border-input bg-transparent px-3 text-sm shadow-xs focus-visible:ring-[3px] focus-visible:ring-ring/50 focus-visible:outline-none";
 
 // TEAM-04, TEAM-07: the owner invites by email and chooses a role.
-export function InviteForm({ domain }: { domain: string | null }) {
+export function InviteForm({ domain, full }: { domain: string | null; full: boolean }) {
   const [state, action] = useActionState<FormState, FormData>(invite, {});
   return (
     <form action={action} className="grid gap-4">
       <FormMessage state={state} />
-      <div className="grid gap-4 sm:grid-cols-[1fr_auto_auto] sm:items-end">
+      {/* Stays mounted when the last seat is taken, so its confirmation still shows. */}
+      <fieldset
+        disabled={full}
+        className="grid gap-4 disabled:opacity-60 sm:grid-cols-[1fr_auto_auto] sm:items-end"
+      >
         <FormField
           label="Email address"
           name="email"
@@ -48,9 +52,14 @@ export function InviteForm({ domain }: { domain: string | null }) {
         <SubmitButton pendingLabel="Sending…">
           <MailPlus aria-hidden /> Send invite
         </SubmitButton>
-      </div>
+      </fieldset>
       {state.fieldErrors?.role ? (
         <p className="text-sm text-destructive">{state.fieldErrors.role}</p>
+      ) : null}
+      {full ? (
+        <p className="text-sm text-muted-foreground">
+          Every seat is taken. Free one up, or upgrade, to invite someone else.
+        </p>
       ) : null}
       <p className="text-xs text-muted-foreground">
         Members use the tools and see usage. Developers can also see and rotate the API key.
