@@ -27,12 +27,11 @@ export async function SiteFooter() {
         <div className="space-y-4">
           <Image src="/brand/mintly-logo-white.svg" alt="Mintly" width={112} height={56} />
           <p>Bank account validation for UK businesses.</p>
-          <p>
-            <a href={`mailto:${SALES_EMAIL}`} className="text-white hover:text-brand-mint">
+          <p className="flex flex-col items-start">
+            <a href={`mailto:${SALES_EMAIL}`} className="py-1.5 text-white hover:text-brand-mint">
               {SALES_EMAIL}
             </a>
-            <br />
-            <a href={SUPPORT_PHONE_HREF} className="text-white hover:text-brand-mint">
+            <a href={SUPPORT_PHONE_HREF} className="py-1.5 text-white hover:text-brand-mint">
               {SUPPORT_PHONE}
             </a>
           </p>

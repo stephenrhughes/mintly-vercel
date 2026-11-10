@@ -278,6 +278,11 @@ Under `/admin`, available only to users with `is_mintly_admin`, checked on the s
 - SEO (`WEB-02`) uses Next metadata: title, description, canonical, Open Graph, JSON-LD (ported from `StructuredData.js`), and `noindex` on `/app/*` and `/admin/*`.
 - The API docs (ReDoc), spec downloads, agent-skill zips and Postman collection stay (`DOC-*`), including the OpenAPI sync and lint at build time.
 - Security headers and CSP go in `next.config` (`WEB-04`). The CSP is updated for Supabase, Resend (none needed in the browser) and the remaining third parties.
+- As built in phase 6:
+  - The CSPs are static allowlists, not nonces: a nonce makes every page render per request, and the sales pages are prerendered. Without a nonce Next.js needs `'unsafe-inline'` scripts. The app gets its own, tighter CSP on its host or under `/app`.
+  - Nothing that tracks visitors loads before consent: analytics (GA4, Clarity) and marketing (Meta Pixel, Google Ads) are separate choices. The old banner recorded a choice but blocked nothing.
+  - The free checker's per-IP limit refuses a check within 2 seconds of the last one without counting it, so a double click no longer uses up the week.
+  - EISCD is £2,130 a year everywhere (the old JSON-LD and `/eiscd-api` title said £2,069).
 
 ### 6.11 Trial approval (N1, `APPR-*`)
 
@@ -470,7 +475,7 @@ As built in phase 5:
 |---|---|
 | `POST /api/check`, `POST /api/check/batch` | Tools proxy |
 | `POST /api/free-check` | Public checker |
-| `POST /api/enquiry`, `POST /api/email-capture`, `POST /api/rating` | Lead capture |
+| ~~`POST /api/enquiry`, `POST /api/email-capture`, `POST /api/rating`~~ | Lead capture. Built as Server Actions on the pages that use them instead (phase 6), like SSO: the same reCAPTCHA check, and Next.js checks the origin. |
 | ~~`POST /api/sso/lookup`~~ | SSO domain lookup. Built as the `signInWithSso` server action on the sign-in page instead (phase 4): the same reCAPTCHA and server-side lookup, and Next.js checks the origin. |
 | `POST /api/webhooks/stripe` | Stripe events, including GoCardless collection |
 | `GET /api/cron/usage-sync`, `GET /api/cron/metering`, `GET /api/cron/reminders` | Vercel Cron, protected by `CRON_SECRET`. `reminders` runs hourly: trial-ending emails, review reminders, and declining reviews older than 7 days. `GET /api/cron/retention` runs daily: 30-day notices and the 24-month purge (§6.13). |
@@ -649,7 +654,7 @@ These are smaller choices. Defaults are proposed, so they don't block phase 0.
 
 1. **Invite expiry:** 14 days proposed.
 2. *(Decided: owners and developers can rotate the key themselves at launch, §6.13.)*
-3. **Bot protection:** keep reCAPTCHA, or switch to Cloudflare Turnstile (free and more privacy-friendly).
+3. *(Decided in phase 6: keep reCAPTCHA v3. The script loads only when a form is first used.)*
 4. **`check_log` retention:** 13 months proposed. *(Built with this default in phase 3: the nightly usage sync deletes older rows.)*
 5. **Design direction:** Tailwind and shadcn/ui proposed. Any brand guidelines or designer input?
 6. **Developer role and usage:** can developers see the per-person breakdown, or only owners? Owners only proposed. *(Built with this default in phase 3: everyone sees their own count; owners see everyone's.)*

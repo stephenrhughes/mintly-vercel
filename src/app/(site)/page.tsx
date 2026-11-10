@@ -171,7 +171,7 @@ export default function HomePage() {
         <div className="mt-10 grid gap-6 md:grid-cols-2">
           <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
             <Code2 className="size-6 text-brand-mint" aria-hidden />
-            <h3 className="mt-4 text-sm font-semibold tracking-wide text-brand-mint uppercase">
+            <h3 className="mt-4 text-sm font-semibold tracking-wide text-white/75 uppercase">
               For Developers
             </h3>
             <h4 className="mt-1 text-xl font-semibold">RESTful API Integration</h4>
@@ -200,7 +200,7 @@ export default function HomePage() {
           </div>
           <div className="rounded-xl bg-white/5 p-6 ring-1 ring-white/10">
             <LayoutDashboard className="size-6 text-brand-mint" aria-hidden />
-            <h3 className="mt-4 text-sm font-semibold tracking-wide text-brand-mint uppercase">
+            <h3 className="mt-4 text-sm font-semibold tracking-wide text-white/75 uppercase">
               For Business Teams
             </h3>
             <h4 className="mt-1 text-xl font-semibold">Easy-to-Use Web Portal</h4>

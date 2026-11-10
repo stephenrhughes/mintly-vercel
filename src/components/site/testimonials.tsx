@@ -34,7 +34,7 @@ export function Testimonials() {
     <ul className="mt-10 grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
       {reviews.map((review) => (
         <li key={review.name} className="flex flex-col rounded-xl border bg-card p-5 shadow-xs">
-          <div className="flex gap-0.5 text-amber-500" aria-label="5 out of 5 stars">
+          <div className="flex gap-0.5 text-amber-500" role="img" aria-label="5 out of 5 stars">
             {Array.from({ length: 5 }, (_, i) => (
               <Star key={i} className="size-4 fill-current" aria-hidden />
             ))}
