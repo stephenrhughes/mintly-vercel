@@ -1,26 +1,25 @@
+import createMDX from "@next/mdx";
 import type { NextConfig } from "next";
 
+import { securityHeaderRules } from "./src/lib/csp";
+import { siteRedirects } from "./src/lib/marketing/redirects";
 import { isIndexable } from "./src/lib/site";
-
-// Baseline security headers, matching the current site's customHttp.yml
-// (requirement WEB-04). The full Content-Security-Policy, with script and
-// connect sources, is added when the third-party scripts arrive (plan §6.10).
-const securityHeaders = [
-  { key: "Strict-Transport-Security", value: "max-age=31536000; includeSubDomains" },
-  { key: "X-Content-Type-Options", value: "nosniff" },
-  { key: "X-Frame-Options", value: "SAMEORIGIN" },
-  { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
-  { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=()" },
-  {
-    key: "Content-Security-Policy",
-    value: "frame-ancestors 'self' https://www.google.com; object-src 'none'; base-uri 'none'",
-  },
-];
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
   partialPrefetching: true,
   poweredByHeader: false,
+  // Articles, integration guides, release notes and legal pages are MDX
+  // (plan §6.10); they are imported by their routes, not routed by file.
+  pageExtensions: ["ts", "tsx", "mdx"],
+  images: {
+    minimumCacheTTL: 86400,
+    // The review badges on /about.
+    remotePatterns: [
+      { protocol: "https", hostname: "cdn-b.saashub.com", pathname: "/img/badges/**" },
+      { protocol: "https", hostname: "static-files.saasbrowser.com", pathname: "/**" },
+    ],
+  },
   turbopack: {
     rules: {
       "*.css": {
@@ -29,13 +28,27 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  // Security headers and CSP on every response (WEB-04, APP-10).
   async headers() {
-    const headers = [...securityHeaders];
-    if (!isIndexable()) {
-      headers.push({ key: "X-Robots-Tag", value: "noindex, nofollow" });
-    }
-    return [{ source: "/:path*", headers }];
+    const extra = isIndexable() ? [] : [{ key: "X-Robots-Tag", value: "noindex, nofollow" }];
+    return securityHeaderRules(process.env, extra);
+  },
+  // Old sales-site URLs (WEB-03). These run before proxy.ts.
+  async redirects() {
+    return siteRedirects.map((redirect) => ({ ...redirect, permanent: true }));
   },
 };
 
-export default nextConfig;
+// Under Turbopack, remark and rehype plugins are named by string with
+// serialisable options (node_modules/next/dist/docs/01-app/02-guides/mdx.md).
+const withMDX = createMDX({
+  options: {
+    remarkPlugins: ["remark-gfm"],
+    rehypePlugins: [
+      "rehype-slug",
+      ["rehype-pretty-code", { theme: "github-dark-dimmed", keepBackground: true }],
+    ],
+  },
+});
+
+export default withMDX(nextConfig);

@@ -1,0 +1,310 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Mintly EISCD API (Monthly, v2)",
+    "termsOfService": "https://www.mintly.uk/terms",
+    "contact": {
+      "email": "support@mintly.uk"
+    },
+    "version": "2.0.0",
+    "description": "The Mintly EISCD API gives your application direct access to the Extended\nIndustry Sort Code Directory — the reference database of UK sort codes. The\nmonthly plan provides the complete EISCD snapshot in all four published\nformats, refreshed weekly at source, with a quota intended for a single\ndownload per calendar month.\n\nDelta files are not part of this plan and are not exposed on this API. If you\nneed the weekly changes, use the\n[weekly EISCD API](https://www.mintly.uk/eiscd-docs) instead.\n\nThe API is RESTful, using predictable, resource-oriented URLs with standard\nHTTP methods and status codes. It is OpenAPI 3.0 compliant, so it integrates\ncleanly with any tooling that understands the OpenAPI standard.\n\nQuestions? Email us at [support@mintly.uk](mailto:support@mintly.uk).\n\n## Authentication\n\nEvery request must carry an `X-API-KEY` header set to your organisation's\nunique key. Keep this secret.\n\n```\nX-API-KEY: YOUR_API_KEY\n```\n\n## Environment\n\nProduction is at `https://api.mintly.uk/eiscd-base/v2`. There is no sandbox\nenvironment for this API.\n\nThe underlying EISCD is refreshed **every Friday from 12:00 GMT**, and the\ndata should be treated as valid from the following Monday. Your quota is\nintended for a single download per calendar month, so whichever snapshot you\ntake is the one published at that point.\n\n## Status codes\n\nWe use standard HTTP status codes, including but not limited to:\n\n| Status | Meaning |\n|---|---|\n| `200` OK | The request succeeded. The response body is the file. |\n| `403` Forbidden | The API key is missing, invalid or disabled. |\n| `404` Not found | The requested file is not available. |\n| `429` Too many requests | You have exceeded the rate limit, or used your monthly quota. Wait, then retry. |\n| `500` Server error | Something went wrong on our side — get in touch so we can look into it. |\n\nEvery non-`200` response has a JSON body with a `Status` and a `Message`\nfield:\n\n```json\n{\n  \"Status\": \"Invalid\",\n  \"Message\": \"File not found\"\n}\n```\n\nA file that does not exist and a file that is not part of your plan both\nreturn `404`, and are deliberately indistinguishable. Requesting a delta file\non this plan therefore returns `404`.\n\n## Backwards compatibility\n\nThe API is designed to be backwards compatible, so changes should not\ndisrupt existing integrations. We follow\n[semantic versioning](https://semver.org) for API releases. Build your\nintegration to handle non-breaking changes gracefully. If a breaking change\never becomes necessary, we will give advance notice and a clear migration\npath, and keep the existing version available for a defined deprecation\nperiod.\n\n## AI agent skill\n\nInstall the Mintly EISCD agent skill for AI-assisted integration help inside\nyour editor. Once installed, invoke `/eiscd-api` to generate client code,\nload the base files into your own store, and schedule a monthly data refresh.\n\n**[Download the agent skill](https://www.mintly.uk/assets/eiscd-api-skill.zip)**\n\nBuilt on the [Agent Skills open standard](https://agentskills.io/clients),\nit works with Claude Code, VS Code (GitHub Copilot), OpenAI Codex, Cursor,\nGemini CLI, and many more.\n"
+  },
+  "externalDocs": {
+    "description": "Find out more about Mintly",
+    "url": "https://www.mintly.uk"
+  },
+  "servers": [
+    {
+      "url": "https://api.mintly.uk/eiscd-base/v2",
+      "description": "Production"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Base",
+      "description": "The base EISCD, offering a complete snapshot of the data. Base EISCD files are available in tab delimited (TXT), Comma Separated Value (CSV), XML or Excel (XLSX) format. Use the GET endpoint for the file format you require.\n"
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "EISCD data files",
+      "tags": [
+        "Base"
+      ]
+    }
+  ],
+  "paths": {
+    "/eiscd-text.zip": {
+      "get": {
+        "tags": [
+          "Base"
+        ],
+        "operationId": "getEiscdText",
+        "summary": "Fetches the entire EISCD data file in tab delimited text format.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl 'https://api.mintly.uk/eiscd-base/v2/eiscd-text.zip' \\\n  --header 'X-API-KEY: YOUR_API_KEY' \\\n  --fail \\\n  --output eiscd-text.zip\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Node.js",
+            "source": "const res = await fetch('https://api.mintly.uk/eiscd-base/v2/eiscd-text.zip', {\n  headers: { 'x-api-key': process.env.MINTLY_API_KEY },\n})\nif (!res.ok) throw new Error((await res.json()).Message)\nawait writeFile('eiscd-text.zip', Buffer.from(await res.arrayBuffer()))\n"
+          },
+          {
+            "lang": "Python",
+            "source": "res = session.get('https://api.mintly.uk/eiscd-base/v2/eiscd-text.zip')\nres.raise_for_status()\nPath('eiscd-text.zip').write_bytes(res.content)\n"
+          }
+        ],
+        "description": "Fetches the most recent EISCD data file in text format. Response body is a zip file approx 850KB.\n\nSpecification of the text (tab delimited) file can be found here: [Vocalink Spec](https://www.vocalink.com/media/thfivwco/extended-iscd-tech-spec-tab-delimited-v280.pdf)\n",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ZipFile"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/eiscd-xml.zip": {
+      "get": {
+        "tags": [
+          "Base"
+        ],
+        "operationId": "getEiscdXml",
+        "summary": "Fetches the entire EISCD data file in XML format.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl 'https://api.mintly.uk/eiscd-base/v2/eiscd-xml.zip' \\\n  --header 'X-API-KEY: YOUR_API_KEY' \\\n  --fail \\\n  --output eiscd-xml.zip\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Node.js",
+            "source": "const res = await fetch('https://api.mintly.uk/eiscd-base/v2/eiscd-xml.zip', {\n  headers: { 'x-api-key': process.env.MINTLY_API_KEY },\n})\nif (!res.ok) throw new Error((await res.json()).Message)\nawait writeFile('eiscd-xml.zip', Buffer.from(await res.arrayBuffer()))\n"
+          },
+          {
+            "lang": "Python",
+            "source": "res = session.get('https://api.mintly.uk/eiscd-base/v2/eiscd-xml.zip')\nres.raise_for_status()\nPath('eiscd-xml.zip').write_bytes(res.content)\n"
+          }
+        ],
+        "description": "Fetches the most recent EISCD data file in XML format. Response body is a zip file approx 2MB.\n\nSpecification of the XML file can be found here: [Vocalink Spec](https://www.vocalink.com/media/kkeemoy1/extended-iscd-specification-xml-v190.pdf)\n",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ZipFile"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/eiscd-csv.zip": {
+      "get": {
+        "tags": [
+          "Base"
+        ],
+        "operationId": "getEiscdCsv",
+        "summary": "Fetches the entire EISCD data file in CSV format.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl 'https://api.mintly.uk/eiscd-base/v2/eiscd-csv.zip' \\\n  --header 'X-API-KEY: YOUR_API_KEY' \\\n  --fail \\\n  --output eiscd-csv.zip\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Node.js",
+            "source": "const res = await fetch('https://api.mintly.uk/eiscd-base/v2/eiscd-csv.zip', {\n  headers: { 'x-api-key': process.env.MINTLY_API_KEY },\n})\nif (!res.ok) throw new Error((await res.json()).Message)\nawait writeFile('eiscd-csv.zip', Buffer.from(await res.arrayBuffer()))\n"
+          },
+          {
+            "lang": "Python",
+            "source": "res = session.get('https://api.mintly.uk/eiscd-base/v2/eiscd-csv.zip')\nres.raise_for_status()\nPath('eiscd-csv.zip').write_bytes(res.content)\n"
+          }
+        ],
+        "description": "Fetches the most recent EISCD data file in CSV format. Response body is a zip file approx 750KB.\n\nSpecification is identical to tab delimited format with comma as delimiter: [Vocalink Spec](https://www.vocalink.com/media/thfivwco/extended-iscd-tech-spec-tab-delimited-v280.pdf)\n",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ZipFile"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    },
+    "/eiscd-xlsx.zip": {
+      "get": {
+        "tags": [
+          "Base"
+        ],
+        "operationId": "getEiscdXlsx",
+        "summary": "Fetches the entire EISCD data file in XLSX Excel format.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl 'https://api.mintly.uk/eiscd-base/v2/eiscd-xlsx.zip' \\\n  --header 'X-API-KEY: YOUR_API_KEY' \\\n  --fail \\\n  --output eiscd-xlsx.zip\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Node.js",
+            "source": "const res = await fetch('https://api.mintly.uk/eiscd-base/v2/eiscd-xlsx.zip', {\n  headers: { 'x-api-key': process.env.MINTLY_API_KEY },\n})\nif (!res.ok) throw new Error((await res.json()).Message)\nawait writeFile('eiscd-xlsx.zip', Buffer.from(await res.arrayBuffer()))\n"
+          },
+          {
+            "lang": "Python",
+            "source": "res = session.get('https://api.mintly.uk/eiscd-base/v2/eiscd-xlsx.zip')\nres.raise_for_status()\nPath('eiscd-xlsx.zip').write_bytes(res.content)\n"
+          }
+        ],
+        "description": "Fetches the most recent EISCD data file in Excel format. Response body is a zip file approx 7MB.\n\nSee tab delimited specification for field descriptions: [Vocalink Spec](https://www.vocalink.com/media/thfivwco/extended-iscd-tech-spec-tab-delimited-v280.pdf)\n",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "$ref": "#/components/responses/ZipFile"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "429": {
+            "$ref": "#/components/responses/TooManyRequests"
+          },
+          "500": {
+            "$ref": "#/components/responses/ServerError"
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "api_key": {
+        "type": "apiKey",
+        "name": "x-api-key",
+        "in": "header"
+      }
+    },
+    "responses": {
+      "ZipFile": {
+        "description": "Successful operation. The response body contains the zip file.",
+        "content": {
+          "application/zip": {
+            "schema": {
+              "type": "string",
+              "format": "binary",
+              "description": "The binary content of the file"
+            }
+          }
+        }
+      },
+      "Forbidden": {
+        "description": "Forbidden. The API key is missing, invalid or disabled.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "NotFound": {
+        "description": "The requested file is not available. Returned both for a file that does not exist and for one that is not part of your plan; the two are deliberately indistinguishable.\n",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "TooManyRequests": {
+        "description": "Too many requests. Rate limit or quota exceeded.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      },
+      "ServerError": {
+        "description": "Unexpected error",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            }
+          }
+        }
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "properties": {
+          "Status": {
+            "type": "string",
+            "description": "The status. For an error, will be \"Error\" or \"Invalid\".",
+            "example": "Invalid"
+          },
+          "Message": {
+            "type": "string",
+            "description": "A short description of the problem.",
+            "example": "File not found"
+          }
+        },
+        "required": [
+          "Status",
+          "Message"
+        ]
+      }
+    }
+  }
+}
