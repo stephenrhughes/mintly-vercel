@@ -15,7 +15,7 @@ const button = {
   padding: "12px 20px",
 } as const;
 
-export function planChangedSubject(kind: ChangeKind, planName: string) {
+export function planChangedSubject(kind: ChangeKind | "admin_change", planName: string) {
   return kind === "downgrade_scheduled"
     ? `Your Mintly plan will change to the ${planName}`
     : `Your Mintly plan is now the ${planName}`;
@@ -29,15 +29,22 @@ export function PlanChangedEmail({
   amountDueNow,
   currency,
   subscriptionUrl,
+  scheduled = false,
 }: {
   planName: string;
-  kind: ChangeKind;
+  /** admin_change: Mintly changed the plan for them (PLAN-09). */
+  kind: ChangeKind | "admin_change";
   effectiveAt: Date;
   amountDueNow: number | null;
   currency: string | null;
   subscriptionUrl: string;
+  /** An admin change that takes effect later, at renewal. */
+  scheduled?: boolean;
 }) {
-  const lines: Record<ChangeKind, string> = {
+  const lines: Record<ChangeKind | "admin_change", string> = {
+    admin_change: scheduled
+      ? `Mintly has arranged for your plan to change to the ${planName} on ${longDate(effectiveAt)}. Until then nothing changes.`
+      : `Mintly has changed your plan to the ${planName}. The change took effect straight away.`,
     trial_switch: `Your free trial is now on the ${planName}. Your trial end date hasn't changed, and nothing has been charged.`,
     start_paid: `Your ${planName} has started and your free trial has ended.`,
     upgrade: `You're now on the ${planName}. The change took effect straight away.`,

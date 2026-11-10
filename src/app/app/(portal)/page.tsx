@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { requireUser } from "@/lib/auth/session";
+import { requirePortalViewer } from "@/lib/auth/session";
 import { canSeeKey } from "@/lib/billing/permissions";
 import { getOrgSubscriptions, planNameFor } from "@/lib/billing/queries";
 import { describeSubscription } from "@/lib/billing/status";
@@ -34,7 +34,7 @@ export default function OverviewPage(props: PageProps<"/app">) {
 }
 
 async function Overview({ searchParams }: PageProps<"/app">) {
-  const [user, params] = await Promise.all([requireUser("/"), searchParams]);
+  const [user, params] = await Promise.all([requirePortalViewer("/"), searchParams]);
   const membership = user.membership;
   const subscriptions = membership ? await getOrgSubscriptions(membership.orgId) : null;
   const sub =
@@ -43,6 +43,13 @@ async function Overview({ searchParams }: PageProps<"/app">) {
     ? describeSubscription(sub, { pendingReview: membership?.reviewStatus === "pending_review" })
     : null;
   const planName = sub ? await planNameFor(sub.stripePriceId) : null;
+  // plan §6.7: an EISCD licence alongside the Bank Account Checker.
+  const eiscd =
+    sub?.product === "bank_checker"
+      ? subscriptions?.current.find((s) => s.product === "eiscd")
+      : undefined;
+  const eiscdStatus = eiscd ? describeSubscription(eiscd) : null;
+  const eiscdName = eiscd ? await planNameFor(eiscd.stripePriceId) : null;
   // NAV-20: owners are prompted to invite someone until the team has two.
   const seats =
     membership && canManageTeam(membership.role)
@@ -164,6 +171,19 @@ async function Overview({ searchParams }: PageProps<"/app">) {
               <Button asChild variant="outline" size="sm">
                 <a href={appPath("/subscription")}>View subscription</a>
               </Button>
+            </CardContent>
+          ) : null}
+          {eiscd && eiscdStatus ? (
+            <CardContent className="border-t pt-4">
+              <p className="flex flex-wrap items-center gap-2 font-medium">
+                {eiscdName}{" "}
+                <Badge variant={eiscdStatus.active ? "default" : "outline"}>
+                  {eiscdStatus.label}
+                </Badge>
+              </p>
+              {eiscdStatus.dateLine ? (
+                <p className="text-sm text-muted-foreground">{eiscdStatus.dateLine}</p>
+              ) : null}
             </CardContent>
           ) : null}
         </Card>

@@ -71,6 +71,11 @@ export function createFakeApiKeyStore(own?: FakeState): ApiKeyStore {
       log(`createKey ${key.id} (${name}) in ${usagePlanId}`);
       return info(key);
     },
+    async describeKey(keyId) {
+      assertNotProduction();
+      const key = s().keys.get(keyId);
+      return key ? info(key) : null;
+    },
     async getKeyValue(keyId) {
       assertNotProduction();
       return s().keys.get(keyId)?.value ?? null;
@@ -112,7 +117,10 @@ export function createFakeUsagePlanStore(): UsagePlanStore {
   return {
     async listUsagePlans() {
       assertNotProduction();
-      return [];
+      // The plans the fake's keys are in, so the plans health page (ADM-09)
+      // has something to compare with in development.
+      const ids = new Set([...state().keys.values()].flatMap((key) => [...key.plans]));
+      return [...ids].sort().map(plan);
     },
     async getUsagePlan(id) {
       assertNotProduction();

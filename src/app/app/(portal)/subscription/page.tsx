@@ -23,11 +23,10 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { type AppUser, requireUser } from "@/lib/auth/session";
+import { type AppUser, portalDb, requirePortalViewer } from "@/lib/auth/session";
 import { canManageBilling, canSeeKey } from "@/lib/billing/permissions";
 import { longDate } from "@/lib/billing/format";
 import { getOrgSubscriptions, planNameFor } from "@/lib/billing/queries";
-import { createClient } from "@/lib/supabase/server";
 import { seatLimit } from "@/lib/billing/seats";
 import {
   describeSubscription,
@@ -74,7 +73,7 @@ const toneVariant: Record<StatusTone, "default" | "secondary" | "outline"> = {
 // SUB-01 to SUB-06, BILL-01, BILL-02, BILL-08: the plan, its status, the API
 // key for owners and developers, and billing for the owner.
 async function Subscription({ searchParams }: PageProps<"/app/subscription">) {
-  const [user, params] = await Promise.all([requireUser("/subscription"), searchParams]);
+  const [user, params] = await Promise.all([requirePortalViewer("/subscription"), searchParams]);
   const membership = user.membership;
   const changed = typeof params.changed === "string" ? changedText[params.changed] : undefined;
 
@@ -211,7 +210,7 @@ async function Subscription({ searchParams }: PageProps<"/app/subscription">) {
 
 async function scheduledChange(orgId: string) {
   // Owners read their organisation's plan changes through RLS.
-  const supabase = await createClient();
+  const supabase = await portalDb();
   const { data } = await supabase
     .from("plan_changes")
     .select("to_price_id, effective_at")
@@ -227,7 +226,7 @@ async function scheduledChange(orgId: string) {
 
 /** A key from a rotation that still works for a while (KEY-01). */
 async function retiringKey(orgId: string): Promise<Date | null> {
-  const supabase = await createClient();
+  const supabase = await portalDb();
   const { data } = await supabase
     .from("api_keys")
     .select("retire_at")
@@ -281,10 +280,24 @@ async function SubscriptionCard({
             sub={sub}
             active={status.active}
             membership={membership}
+            viewingAs={Boolean(user.viewAs)}
             retiringUntil={status.active ? await retiringKey(membership.orgId) : null}
           />
         </section>
       </CardContent>
+      {sub.product === "eiscd" ? (
+        // plan §6.7: the EISCD card links to its own docs.
+        <CardFooter className="flex flex-wrap gap-3 border-t">
+          <Button asChild variant="outline" size="sm">
+            <a href={`${siteConfig.canonicalUrl}/eiscd-docs`} target="_blank" rel="noreferrer">
+              <ExternalLink aria-hidden /> EISCD API documentation
+            </a>
+          </Button>
+          <p className="text-sm text-muted-foreground">
+            To change your EISCD licence, email {siteConfig.supportEmail}.
+          </p>
+        </CardFooter>
+      ) : null}
       {canManageBilling(membership) && sub.product === "bank_checker" && !sub.expired ? (
         // PLAN-01: the owner changes plan themselves.
         <CardFooter className="border-t">
@@ -303,13 +316,23 @@ function KeySection({
   sub,
   active,
   membership,
+  viewingAs,
   retiringUntil,
 }: {
   sub: SubscriptionView;
   active: boolean;
   membership: NonNullable<AppUser["membership"]>;
+  viewingAs: boolean;
   retiringUntil: Date | null;
 }) {
+  if (viewingAs) {
+    // ADM-13: the key value is never shown to an admin viewing as a customer.
+    return (
+      <p className="text-sm text-muted-foreground">
+        The key is hidden while viewing as a customer. Its state is on the admin organisation page.
+      </p>
+    );
+  }
   if (membership.role === "member") {
     return (
       <p className="text-sm text-muted-foreground">
@@ -344,7 +367,7 @@ function KeySection({
   }
   return (
     <>
-      <ApiKey />
+      <ApiKey product={sub.product} />
       {retiringUntil ? (
         <p className="text-sm text-muted-foreground">
           Your previous key keeps working until{" "}
@@ -363,7 +386,8 @@ function KeySection({
           it in the <code>x-api-key</code> header. If it leaks, rotate it below.
         </AlertDescription>
       </Alert>
-      <RotateKeyForm />
+      {/* KEY-01 covers the Bank Account Checker key; EISCD keys are rotated by Mintly. */}
+      {sub.product === "bank_checker" ? <RotateKeyForm /> : null}
     </>
   );
 }

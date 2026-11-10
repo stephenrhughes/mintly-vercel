@@ -30,39 +30,45 @@ const toDate = (seconds: number) => new Date(seconds * 1000);
 const idOf = (value: string | { id: string } | null | undefined) =>
   typeof value === "string" ? value : (value?.id ?? null);
 
+/** The subscription as the plan-change rules see it. Expand `customer` to see its card. */
+export function liveSubscriptionFrom(sub: Stripe.Subscription): LiveSubscription {
+  const item = subscriptionItem(sub);
+  if (!item) throw new Error(`Subscription ${sub.id} has no items`);
+  const meta = priceMeta(item.price);
+  const customer =
+    typeof sub.customer === "object" && !("deleted" in sub.customer && sub.customer.deleted)
+      ? (sub.customer as Stripe.Customer)
+      : null;
+  return {
+    id: sub.id,
+    customerId: idOf(sub.customer as string | { id: string }) ?? "",
+    itemId: item.id,
+    priceId: item.price.id,
+    status: sub.status,
+    trialing: sub.status === "trialing",
+    trialEnd: sub.trial_end ? toDate(sub.trial_end) : null,
+    currentPeriodStart: toDate(sub.items.data[0].current_period_start),
+    currentPeriodEnd: toDate(sub.items.data[0].current_period_end),
+    scheduleId: idOf(sub.schedule as string | { id: string } | null),
+    cancelAt: sub.cancel_at ? toDate(sub.cancel_at) : null,
+    tier: isPlanTier(meta.tier) ? meta.tier : null,
+    interval: isBillingInterval(meta.interval) ? meta.interval : null,
+    custom: meta.custom,
+    hasPaymentMethod: Boolean(
+      sub.default_payment_method ||
+      sub.default_source ||
+      customer?.invoice_settings?.default_payment_method ||
+      customer?.default_source,
+    ),
+  };
+}
+
 export function stripePlanChanges(stripe: Stripe): PlanChangeStripe {
   return {
     async getSubscription(id): Promise<LiveSubscription> {
-      const sub = await stripe.subscriptions.retrieve(id, { expand: ["customer"] });
-      const item = subscriptionItem(sub);
-      if (!item) throw new Error(`Subscription ${id} has no items`);
-      const meta = priceMeta(item.price);
-      const customer =
-        typeof sub.customer === "object" && !("deleted" in sub.customer && sub.customer.deleted)
-          ? (sub.customer as Stripe.Customer)
-          : null;
-      return {
-        id: sub.id,
-        customerId: idOf(sub.customer as string | { id: string }) ?? "",
-        itemId: item.id,
-        priceId: item.price.id,
-        status: sub.status,
-        trialing: sub.status === "trialing",
-        trialEnd: sub.trial_end ? toDate(sub.trial_end) : null,
-        currentPeriodStart: toDate(sub.items.data[0].current_period_start),
-        currentPeriodEnd: toDate(sub.items.data[0].current_period_end),
-        scheduleId: idOf(sub.schedule as string | { id: string } | null),
-        cancelAt: sub.cancel_at ? toDate(sub.cancel_at) : null,
-        tier: isPlanTier(meta.tier) ? meta.tier : null,
-        interval: isBillingInterval(meta.interval) ? meta.interval : null,
-        custom: meta.custom,
-        hasPaymentMethod: Boolean(
-          sub.default_payment_method ||
-          sub.default_source ||
-          customer?.invoice_settings?.default_payment_method ||
-          customer?.default_source,
-        ),
-      };
+      return liveSubscriptionFrom(
+        await stripe.subscriptions.retrieve(id, { expand: ["customer"] }),
+      );
     },
 
     async previewAmountDue({ sub, priceId, kind, prorationDate }) {
@@ -219,7 +225,7 @@ export function supabasePlanChangeRecords(): PlanChangeRecords {
   };
 }
 
-async function ownerEmail(orgId: string): Promise<string | null> {
+export async function ownerEmail(orgId: string): Promise<string | null> {
   const db = createServiceClient();
   const { data: owner } = await db
     .from("memberships")

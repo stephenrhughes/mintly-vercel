@@ -2,6 +2,7 @@ import "server-only";
 
 import type { SupabaseClient } from "@supabase/supabase-js";
 
+import { recordAudit } from "@/lib/admin/audit";
 import { ProvisioningBusyError } from "@/lib/billing/provision";
 import { TRIAL_DAYS } from "@/lib/billing/plans";
 import type { ReviewStatus } from "@/lib/nav";
@@ -191,7 +192,7 @@ export async function addDomain(
     .select("domain");
   if (error) throw new Error(`adding ${domain} failed: ${error.message}`);
   if (data.length === 0) return; // Already listed.
-  await audit(db, {
+  await recordAudit(db, {
     actorId: input.actorId,
     orgId: input.orgId ?? null,
     action: input.list === "trusted" ? "domain.trust" : "domain.block",
@@ -207,30 +208,12 @@ export async function removeDomain(
   const { data, error } = await db.from(table).delete().eq("domain", input.domain).select("domain");
   if (error) throw new Error(`removing ${input.domain} failed: ${error.message}`);
   if (data.length === 0) return;
-  await audit(db, {
+  await recordAudit(db, {
     actorId: input.actorId,
     orgId: null,
     action: input.list === "trusted" ? "domain.untrust" : "domain.unblock",
     details: { domain: input.domain },
   });
-}
-
-async function audit(
-  db: SupabaseClient,
-  input: {
-    actorId: string | null;
-    orgId: string | null;
-    action: string;
-    details: Record<string, unknown>;
-  },
-) {
-  const { error } = await db.from("admin_audit").insert({
-    actor_id: input.actorId,
-    target_org_id: input.orgId,
-    action: input.action,
-    details: input.details,
-  });
-  if (error) throw new Error(`writing the audit entry failed: ${error.message}`);
 }
 
 /**

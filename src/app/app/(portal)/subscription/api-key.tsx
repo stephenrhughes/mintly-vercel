@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { type RevealState, revealApiKey } from "./actions";
 
 // SUB-03: the key is fetched only when asked for, never rendered into the page.
-export function ApiKey() {
+export function ApiKey({ product = "bank_checker" }: { product?: "bank_checker" | "eiscd" }) {
   const [state, setState] = useState<RevealState>({});
   const [visible, setVisible] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -16,7 +16,7 @@ export function ApiKey() {
 
   const load = (then?: (value: string) => void) =>
     startTransition(async () => {
-      const result = state.value ? state : await revealApiKey();
+      const result = state.value ? state : await revealApiKey(product);
       setState(result);
       if (result.value) then?.(result.value);
     });

@@ -3,7 +3,7 @@ import "server-only";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 import { createServiceClient } from "@/lib/supabase/admin";
-import { createClient } from "@/lib/supabase/server";
+import { portalDb } from "@/lib/auth/session";
 
 import { utcDate } from "./sync";
 import { addBlankDates, projectedMonthlyUsage, type UsagePoint } from "./series";
@@ -55,7 +55,19 @@ export type OrgUsage = {
 
 /** Daily usage for the chart: two years, zero days filled in (MON-01, MON-05). */
 export async function getOrgUsage(orgId: string, product: Product): Promise<OrgUsage> {
-  const rows = await readRows(await createClient(), orgId, product, HISTORY_DAYS);
+  return usageFor(await portalDb(), orgId, product);
+}
+
+/**
+ * The same, for the admin organisation page (ADM-04). Service role: the
+ * caller has already passed requireAdmin().
+ */
+export async function getOrgUsageForAdmin(orgId: string, product: Product): Promise<OrgUsage> {
+  return usageFor(createServiceClient(), orgId, product);
+}
+
+async function usageFor(db: SupabaseClient, orgId: string, product: Product): Promise<OrgUsage> {
+  const rows = await readRows(db, orgId, product, HISTORY_DAYS);
   const lastSynced = rows.reduce<string | null>(
     (latest, row) => (!latest || row.synced_at > latest ? row.synced_at : latest),
     null,

@@ -17,7 +17,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { requireUser } from "@/lib/auth/session";
+import { requirePortalViewer } from "@/lib/auth/session";
 import { type ChangeRequest, classifyChange, recommendPlan } from "@/lib/billing/change-plan";
 import { longDate, money } from "@/lib/billing/format";
 import { canManageBilling } from "@/lib/billing/permissions";
@@ -93,7 +93,10 @@ function Message({ heading, children }: { heading: string; children: React.React
 
 // plan §6.12, PLAN-01 to PLAN-07: the owner changes plan themselves.
 async function ChangePlan({ searchParams }: PageProps<"/app/subscription/change">) {
-  const [user, params] = await Promise.all([requireUser("/subscription/change"), searchParams]);
+  const [user, params] = await Promise.all([
+    requirePortalViewer("/subscription/change"),
+    searchParams,
+  ]);
   const membership = user.membership;
   const contact = `mailto:${siteConfig.supportEmail}`;
 

@@ -1,19 +1,19 @@
 import { CircleAlert, FlaskConical } from "lucide-react";
 import type { Metadata } from "next";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { Suspense } from "react";
 
 import { PageHeader } from "@/components/app/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { type AppUser, requireUser } from "@/lib/auth/session";
+import { type AppUser, portalDb, requirePortalViewer } from "@/lib/auth/session";
 import { SANDBOX_API } from "@/lib/bank-api/access";
 import { resolveCheckAccess } from "@/lib/bank-api/access-server";
 import { SANDBOX_TEST_VALUES } from "@/lib/bank-api/requests";
 import { canSeeKey } from "@/lib/billing/permissions";
 import { appPath } from "@/lib/hosts";
 import { siteConfig } from "@/lib/site";
-import { createClient } from "@/lib/supabase/server";
 
 import { ToolsWorkspace } from "./tools-workspace";
 
@@ -33,7 +33,7 @@ export default function ToolsPage() {
 // The web tools (plan §6.2, TOOL-*). Checks go through the server, which
 // adds the organisation's key, so the key never reaches this page (Q2).
 async function Tools() {
-  const user = await requireUser("/tools");
+  const user = await requirePortalViewer("/tools");
   const membership = user.membership;
   const access = await resolveCheckAccess(user);
   const header = (
@@ -128,15 +128,38 @@ async function Tools() {
 
 const COUNT_DAYS = 30;
 
+/**
+ * check_counts() reads the session's own organisation, so an admin viewing
+ * as a customer (ADM-13) counts that organisation's check_log directly.
+ */
+async function viewAsCheckCounts(db: SupabaseClient, orgId: string, since: string) {
+  const { data, error } = await db
+    .from("check_log")
+    .select("user_id")
+    .eq("org_id", orgId)
+    .gte("at", since)
+    .limit(100_000)
+    .returns<Array<{ user_id: string | null }>>();
+  if (error) return { data: null, error };
+  const counts = new Map<string | null, number>();
+  for (const row of data) counts.set(row.user_id, (counts.get(row.user_id) ?? 0) + 1);
+  return {
+    data: [...counts].map(([user_id, checks]) => ({ user_id, checks })),
+    error: null,
+  };
+}
+
 // Plan §6.4: each person sees their own count; owners see everyone's.
 async function CheckCounts({ user }: { user: AppUser }) {
   const membership = user.membership;
   if (!membership) return null;
   const now = new Date();
   const since = new Date(now.getTime() - COUNT_DAYS * 24 * 60 * 60 * 1000).toISOString();
-  const supabase = await createClient();
+  const supabase = await portalDb();
 
-  const { data, error } = await supabase.rpc("check_counts", { p_since: since });
+  const { data, error } = user.viewAs
+    ? await viewAsCheckCounts(supabase, membership.orgId, since)
+    : await supabase.rpc("check_counts", { p_since: since });
   if (error) {
     console.error("reading check counts failed", error.message);
     return null;

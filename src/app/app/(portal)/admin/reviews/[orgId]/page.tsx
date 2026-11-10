@@ -12,7 +12,7 @@ import { appPath } from "@/lib/hosts";
 import { getReview } from "@/lib/review/queries";
 import { normaliseDomain, waitingFor } from "@/lib/review/rules";
 
-import { actionText, Check, dateTime, StatusBadge } from "../shared";
+import { actionText, Check, dateTime, StatusBadge } from "@/components/admin/shared";
 import { ReviewForms } from "./review-forms";
 
 export const metadata: Metadata = { title: "Review" };

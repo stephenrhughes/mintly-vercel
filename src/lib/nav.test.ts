@@ -56,6 +56,12 @@ describe("buildNav by role", () => {
     ]);
     expect(group?.items[0].disabledReason).toBeUndefined();
   });
+
+  it("opens every admin page now that phase 5 has shipped them", () => {
+    const admin = buildNav({ role: null, reviewStatus: null, isMintlyAdmin: true });
+    const items = admin.find((g) => g.id === "admin")?.items ?? [];
+    expect(items.filter((i) => i.disabledReason).map((i) => i.id)).toEqual([]);
+  });
 });
 
 describe("buildNav availability", () => {

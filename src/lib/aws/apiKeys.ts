@@ -17,7 +17,8 @@ import { createFakeApiKeyStore } from "./fake";
 import type { ApiKeyInfo, ApiKeyStore } from "./types";
 
 // API Gateway keys (plan §7): create, read the value, enable, disable, and
-// move between usage plans. rotateKey arrives with KEY-01 (phase 2c).
+// move between usage plans. Key rotation (KEY-01) is in
+// src/lib/billing/rotate-key.ts, built from these.
 
 function toInfo(key: { id?: string; name?: string; enabled?: boolean }): ApiKeyInfo {
   return { id: key.id ?? "", name: key.name ?? "", enabled: Boolean(key.enabled) };
@@ -47,6 +48,16 @@ function createAwsApiKeyStore(): ApiKeyStore {
         .send(new CreateUsagePlanKeyCommand({ usagePlanId, keyId: key.id, keyType: "API_KEY" }))
         .catch(ignore(ConflictException));
       return toInfo(key);
+    },
+    async describeKey(keyId) {
+      try {
+        return toInfo(
+          await client().send(new GetApiKeyCommand({ apiKey: keyId, includeValue: false })),
+        );
+      } catch (error) {
+        if (error instanceof NotFoundException) return null;
+        throw error;
+      }
     },
     async getKeyValue(keyId) {
       try {
@@ -105,6 +116,17 @@ export function keyNameFor(subscriptionItemId: string): string {
 
 export const getKeyValue = (keyId: string) => apiKeyStore().getKeyValue(keyId);
 export const getKeyPlans = (keyId: string) => apiKeyStore().getKeyPlans(keyId);
+/** The key's name and enabled state, never its value (ADM-03). */
+export const describeKey = (keyId: string) => apiKeyStore().describeKey(keyId);
+
+// Single steps, for the admin resync (ADM-05), which puts a key in exactly
+// the usage plans it belongs in.
+export const addKeyToPlan = (keyId: string, usagePlanId: string) =>
+  apiKeyStore().addToPlan(keyId, usagePlanId);
+export const removeKeyFromPlan = (keyId: string, usagePlanId: string) =>
+  apiKeyStore().removeFromPlan(keyId, usagePlanId);
+export const setKeyEnabled = (keyId: string, enabled: boolean) =>
+  apiKeyStore().setEnabled(keyId, enabled);
 
 export async function enableKey(keyId: string, usagePlanId: string) {
   await apiKeyStore().addToPlan(keyId, usagePlanId);

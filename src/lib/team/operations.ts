@@ -26,7 +26,8 @@ import { hashInviteToken, isPlausibleToken, newInviteToken } from "./tokens";
 export type InviteEmail = {
   orgName: string;
   inviterName: string;
-  role: InvitableRole;
+  /** owner: an admin-created organisation's first owner (ADM-12). */
+  role: OrgRole;
   token: string;
   expiresAt: Date;
 };
@@ -53,7 +54,18 @@ const expiry = (now: Date) => new Date(now.getTime() + INVITE_EXPIRY_DAYS * 86_4
 /** TEAM-04, TEAM-05, TEAM-07: invite someone, or hold the invite until approval. */
 export async function inviteMember(
   deps: TeamDeps,
-  input: { actor: Actor; org: OrgContext; email: string; role: string },
+  input: {
+    actor: Actor;
+    org: OrgContext;
+    email: string;
+    role: string;
+    /**
+     * The owner's email, whose domain invitees must share. Defaults to the
+     * actor's, who is the owner; an admin inviting for an organisation
+     * passes the owner's (plan §6.8).
+     */
+    ownerEmail?: string | null;
+  },
 ): Promise<TeamResult> {
   const email = input.email.trim().toLowerCase();
   if (!emailSchema.safeParse(email).success) {
@@ -75,7 +87,7 @@ export async function inviteMember(
   if (org.error) throw new Error(`reading the organisation failed: ${org.error.message}`);
 
   const domainProblem = inviteDomainProblem({
-    ownerEmail: input.actor.email,
+    ownerEmail: input.ownerEmail === undefined ? input.actor.email : (input.ownerEmail ?? ""),
     inviteeEmail: email,
     allowExternal: org.data.allow_external_invites,
   });
@@ -108,6 +120,41 @@ export async function inviteMember(
     orgName: input.org.orgName,
     inviterName: input.actor.name,
     role: input.role,
+    token,
+    expiresAt: expiry(deps.now?.() ?? new Date()),
+  });
+}
+
+/**
+ * ADM-12: an admin invites the first owner of an organisation they set up.
+ * Allowed only while it has no owner; the owner takes a seat like anyone.
+ */
+export async function inviteOwner(
+  deps: TeamDeps,
+  input: { actor: Actor; org: OrgContext; email: string },
+): Promise<TeamResult> {
+  const email = input.email.trim().toLowerCase();
+  if (!emailSchema.safeParse(email).success) {
+    return { ok: false, error: "Enter a valid email address", field: "email" };
+  }
+  const token = newInviteToken();
+  const { error } = await deps.db.rpc("create_invitation", {
+    p_org: input.org.orgId,
+    p_email: email,
+    p_role: "owner",
+    p_token_hash: hashInviteToken(token),
+    p_invited_by: input.actor.id,
+    p_send: true,
+  });
+  if (error) {
+    const message = inviteErrorMessage(teamErrorHint(error), error.details);
+    if (message) return { ok: false, error: message };
+    throw new Error(`creating the owner invite failed: ${error.message}`);
+  }
+  return sendOrWarn(deps, email, {
+    orgName: input.org.orgName,
+    inviterName: input.actor.name,
+    role: "owner",
     token,
     expiresAt: expiry(deps.now?.() ?? new Date()),
   });
@@ -151,7 +198,7 @@ async function loadOpenInvite(db: SupabaseClient, orgId: string, inviteId: strin
 /** Sends an invite again with a new link and a fresh 14 days. */
 export async function resendInvite(
   deps: TeamDeps,
-  input: { actor: Actor; org: OrgContext; inviteId: string },
+  input: { actor: Actor; org: OrgContext; inviteId: string; ownerEmail?: string | null },
 ): Promise<TeamResult> {
   const invite = await loadOpenInvite(deps.db, input.org.orgId, input.inviteId);
   if (!invite) return { ok: false, error: "That invite is no longer open." };
@@ -168,6 +215,7 @@ export async function resendInvite(
       org: input.org,
       email: invite.email,
       role: invite.role,
+      ownerEmail: input.ownerEmail,
     });
   }
 
@@ -361,7 +409,7 @@ export type InviteDetails = {
   orgId: string;
   orgName: string;
   email: string;
-  role: InvitableRole;
+  role: OrgRole;
   inviterName: string | null;
   /** Set when the invite can't be accepted, whoever opens it. */
   problem: Extract<TeamErrorHint, "accepted" | "revoked" | "held" | "expired"> | null;
@@ -383,7 +431,7 @@ export async function lookupInvite(
     .maybeSingle<{
       org_id: string;
       email: string;
-      role: InvitableRole;
+      role: OrgRole;
       invited_by: string | null;
       sent_at: string | null;
       expires_at: string | null;

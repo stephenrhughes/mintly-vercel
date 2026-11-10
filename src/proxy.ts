@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { VIEW_AS_COOKIE, viewAsBlocksRequest } from "@/lib/admin/view-as-guard";
 import { hintCookieOptions, SIGNED_IN_HINT_COOKIE } from "@/lib/auth/hint-cookie";
 import {
   APP_NOT_FOUND_PATH,
@@ -40,6 +41,24 @@ export async function proxy(request: NextRequest) {
     );
     response.headers.set("X-Robots-Tag", "noindex, nofollow");
     return response;
+  }
+
+  // ADM-13: while an admin views the portal as a customer, nothing can be
+  // changed: every write, Server Actions included, is refused here.
+  if (
+    viewAsBlocksRequest({
+      method: request.method,
+      appPathname,
+      hasViewAsCookie: request.cookies.has(VIEW_AS_COOKIE),
+    })
+  ) {
+    return new NextResponse(
+      "You're viewing as a customer, so nothing can be changed. Exit first.",
+      {
+        status: 403,
+        headers: { "X-Robots-Tag": "noindex, nofollow" },
+      },
+    );
   }
 
   const session = await refreshSession(request);

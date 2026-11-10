@@ -10,7 +10,7 @@ import { appPath } from "@/lib/hosts";
 import { type ListedDomain, listDomains } from "@/lib/review/queries";
 
 import { removeListedDomain } from "../actions";
-import { dateTime } from "../shared";
+import { dateTime } from "@/components/admin/shared";
 import { DomainForm } from "./domain-form";
 
 export const metadata: Metadata = { title: "Trusted and blocked domains" };

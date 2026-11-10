@@ -2,7 +2,7 @@ import "server-only";
 
 import { sendEmail } from "@/lib/email/send";
 import { appUrl } from "@/lib/hosts";
-import { roleLabels } from "@/lib/nav";
+import { inviteRolePhrase } from "./rules";
 import { createServiceClient } from "@/lib/supabase/admin";
 import { TeamInviteEmail, teamInviteSubject } from "@/emails/team-invite";
 
@@ -32,7 +32,7 @@ export function teamDeps(): TeamDeps {
         react: TeamInviteEmail({
           orgName: invite.orgName,
           inviterName: invite.inviterName,
-          roleLabel: roleLabels[invite.role],
+          rolePhrase: inviteRolePhrase(invite.role),
           joinUrl: joinUrl(invite.token),
           expiresOn: longDate(invite.expiresAt),
         }),

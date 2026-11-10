@@ -92,7 +92,8 @@ export type PlanChangeRecord = {
   subscriptionId: string;
   fromPriceId: string;
   toPriceId: string;
-  kind: ChangeKind;
+  /** Admin changes (PLAN-09) are recorded as admin_change. */
+  kind: ChangeKind | "admin_change";
   effectiveAt: Date;
   scheduleId: string | null;
   amountDueNow: number | null;

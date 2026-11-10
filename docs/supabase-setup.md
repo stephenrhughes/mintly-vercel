@@ -73,7 +73,7 @@ insert into public.signup_allowlist (entry, note) values ('qa.tester@gmail.com',
 
 ## 5. Make someone a Mintly admin
 
-Until the admin area can do it (plan §6.8), in the SQL editor:
+Admins grant and revoke admin on `/admin/admins` (the last admin can't be removed). The very first admin is made in the SQL editor:
 
 ```sql
 update public.profiles set is_mintly_admin = true where email = 'someone@mintly.uk';
@@ -83,7 +83,7 @@ They'll be asked to set up an authenticator app the first time they open `/admin
 
 ## 6. Add an SSO tenant (SAML)
 
-SAML SSO needs a paid Supabase plan (plan §13.7). Until the admin SSO page arrives (phase 5), a tenant is set up in two steps (`SSO-07`).
+SAML SSO needs a paid Supabase plan (plan §13.7). A tenant is set up in two steps (`SSO-07`); `/admin/sso` shows the same checklist with this project's URLs.
 
 **1. Register the identity provider** with the Supabase CLI, logged in to the project (`npx supabase login`, then `npx supabase link --project-ref <ref>`). Give the customer's IT team these settings for their IdP:
 
@@ -113,14 +113,7 @@ npx supabase sso add --type saml --project-ref <ref> \
 
 Note the provider ID it prints (`npx supabase sso list --project-ref <ref>` shows it again).
 
-**2. Map the domain to the organisation** in the SQL editor. Users from the domain then join it on their first SSO sign-in, as Members unless `default_role` says otherwise (`SSO-05`). They join only while the organisation has a live subscription, and seat limits aren't enforced for them.
-
-```sql
-insert into public.sso_domains (domain, org_id, supabase_sso_provider_id, default_role)
-values ('acme.co.uk', '<organisation id>', '<provider id>', 'member');
-```
-
-To stop SSO for a domain without deleting it: `update public.sso_domains set enabled = false where domain = 'acme.co.uk';`
+**2. Map the domain to the organisation** on `/admin/sso`: the domain, the organisation, the provider ID and the role new users get. Users from the domain then join it on their first SSO sign-in, as Members unless the role says otherwise (`SSO-05`). They join only while the organisation has a live subscription, and seat limits aren't enforced for them. The same page switches SSO off for a domain, or removes it; each change is audited.
 
 **Test tenant:** a free developer IdP (for example a Microsoft Entra test tenant, or a mock SAML IdP such as `mocksaml.com`) can stand in for a customer. Register it as above with a test domain, map it to a staging organisation with a subscription, then use **Sign in with SSO** on the sign-in page.
 

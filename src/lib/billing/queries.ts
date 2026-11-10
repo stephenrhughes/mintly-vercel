@@ -2,11 +2,10 @@ import "server-only";
 
 import { getPrice } from "@/lib/stripe/catalogue";
 import { getStripe } from "@/lib/stripe/client";
-import { createClient } from "@/lib/supabase/server";
+import { portalDb } from "@/lib/auth/session";
 
-import { isPlanTier, PLANS } from "./plans";
+import { planLabel } from "./plan-name";
 import type { SubscriptionView } from "./status";
-import { priceMeta } from "./subscription-record";
 
 // Reading an organisation's subscriptions as the signed-in user, so RLS
 // limits it to their own organisation (SUB-05).
@@ -60,7 +59,7 @@ export type OrgSubscriptions = {
 };
 
 export async function getOrgSubscriptions(orgId: string): Promise<OrgSubscriptions> {
-  const supabase = await createClient();
+  const supabase = await portalDb();
   const { data, error } = await supabase
     .from("subscriptions")
     .select(
@@ -88,10 +87,7 @@ export async function planNameFor(priceId: string): Promise<string> {
   if (!getStripe()) return "Bank Account Checker";
   try {
     const price = await getPrice(priceId);
-    const meta = priceMeta(price);
-    if (meta.product === "eiscd") return price.nickname ?? "EISCD data file";
-    if (isPlanTier(meta.tier)) return PLANS[meta.tier].name;
-    return price.nickname ?? "Custom plan";
+    return planLabel(price);
   } catch (error) {
     console.error("reading the price failed", priceId, error);
     return "Bank Account Checker";

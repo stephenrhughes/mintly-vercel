@@ -50,16 +50,7 @@ export type NavGroup = { id: string; label: string; items: NavItem[]; admin?: bo
 // Pages that later delivery phases add (plan §11). Their items stay in the
 // menu, disabled, so the menu doesn't change shape as they arrive. Remove a
 // path from here when its page ships.
-const notYetAvailable = new Set([
-  "/billing",
-  "/admin/organisations",
-  "/admin/reports",
-  "/admin/plans",
-  "/admin/offers",
-  "/admin/sso",
-  "/admin/admins",
-  "/admin/feedback",
-]);
+const notYetAvailable = new Set(["/billing"]);
 
 const COMING_SOON = "Coming soon";
 

@@ -39,14 +39,19 @@ export type RotateResult = { ok: true; message: string } | { ok: false; error: s
 type Who = {
   id: string;
   email: string;
-  role: OrgRole;
+  /** "admin": a Mintly admin rotating from the admin area (plan §6.8). */
+  role: OrgRole | "admin";
   orgId: string;
   orgName: string;
   reviewStatus: ReviewStatus;
 };
 
-/** Whether this person may rotate the key (plan §3: owners and developers, approved organisations). */
+/**
+ * Whether this person may rotate the key (plan §3: owners and developers of
+ * approved organisations, and Mintly admins for any organisation).
+ */
 export function canRotateKey(who: Pick<Who, "role" | "reviewStatus"> | null): boolean {
+  if (who?.role === "admin") return true;
   return Boolean(who && who.role !== "member" && who.reviewStatus === "approved");
 }
 
@@ -119,7 +124,7 @@ export async function rotateKey(
     await deps.notifyOwner({
       orgId: who.orgId,
       orgName: who.orgName,
-      rotatedBy: who.email,
+      rotatedBy: who.role === "admin" ? "Mintly support" : who.email,
       oldKeyUntil: when === "now" ? null : retireAt,
     });
   } catch (e) {

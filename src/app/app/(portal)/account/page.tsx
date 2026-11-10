@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireUser } from "@/lib/auth/session";
+import { requirePortalViewer } from "@/lib/auth/session";
 import { appPath } from "@/lib/hosts";
 
 import { PasswordForm } from "./password-form";
@@ -26,7 +26,7 @@ export default function AccountPage() {
 }
 
 async function Account() {
-  const user = await requireUser("/account");
+  const user = await requirePortalViewer("/account");
 
   return (
     <div className="grid gap-8">

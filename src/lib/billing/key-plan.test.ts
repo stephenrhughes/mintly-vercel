@@ -110,6 +110,24 @@ describe("planKeyActions", () => {
     ).toEqual([{ type: "enable", keyId: "key_1", usagePlanId: PAID_PLAN }]);
   });
 
+  it("keeps a key an admin switched off off, whatever the subscription (plan §6.8)", () => {
+    const live = record({ status: "active" });
+    expect(
+      planKeyActions({
+        record: live,
+        reviewStatus: "approved",
+        key: key({ enabled: false, usagePlanId: null, disabledByAdmin: true }),
+      }),
+    ).toEqual([]);
+    expect(
+      planKeyActions({
+        record: live,
+        reviewStatus: "approved",
+        key: key({ usagePlanId: PAID_PLAN, disabledByAdmin: true }),
+      }),
+    ).toEqual([{ type: "disable", keyId: "key_1", usagePlanId: PAID_PLAN }]);
+  });
+
   it("disables the key of a suspended or rejected organisation (APPR-08)", () => {
     for (const reviewStatus of ["suspended", "rejected"] as const) {
       expect(planKeyActions({ record: record(), reviewStatus, key: key() })).toEqual([

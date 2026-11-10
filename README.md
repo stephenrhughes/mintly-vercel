@@ -30,7 +30,16 @@ Still to do for phase 0: Vercel staging environment and the AWS OIDC roles.
 - `/team` for everyone, with seats used against the limit; the owner invites by email with a role (Developer or Member), resends, withdraws, removes and changes roles (`TEAM-*`)
 - Invites expire after 14 days, are held while a trial awaits review and sent on approval, and are checked against the seat limit in the database (`TEAM-03`, `TEAM-05`)
 - `/join/<token>`: sign in or sign up with the invited email, and an explicit confirmation before anyone moves from another organisation (`JOIN-*`). Old `/join?invite=` links redirect
-- **Sign in with SSO** on the sign-in page, behind reCAPTCHA v3; first-time SSO users join their tenant's organisation (`SSO-01`–`SSO-05`). Tenants are set up as in [`docs/supabase-setup.md`](./docs/supabase-setup.md) §6 until the admin page arrives in phase 5
+- **Sign in with SSO** on the sign-in page, behind reCAPTCHA v3; first-time SSO users join their tenant's organisation (`SSO-01`–`SSO-05`). Tenants are registered as in [`docs/supabase-setup.md`](./docs/supabase-setup.md) §6 and mapped on `/admin/sso`
+
+**Phase 5: the admin area** (plan §6.8). In place, for Mintly admins who have completed MFA. Every write, and every failure, is recorded in `admin_audit`:
+
+- `/admin`: trials awaiting review, counts by status, trials ending within 7 days, drift, past due, over the seat limit and over 80% of the allowance
+- `/admin/organisations` and `/admin/organisations/<id>`: every customer from the database and Stripe together, with drift highlighted, resync from Stripe (preview, then apply), team and seats, key state in API Gateway (never the value), usage and the latest audit entries (`ADM-01`–`ADM-07`)
+- On an organisation: change plan with any price, trial and proration options, now or at renewal (`PLAN-09`); extra seats (`PLAN-11`); extend a trial; cancel; suspend or reinstate; switch the key off (it stays off through Stripe events) or rotate it; manage the team, transfer ownership and allow invites from other domains
+- `/admin/customers/new`: set up any customer, EISCD included, on any or a new custom price, by invoice (with an optional GoCardless mandate) or card, then invite the owner (`ADM-12`, plan §6.7)
+- `/admin/view-as/<user>`: view the portal as a user sees it, read-only, for up to an hour, with a banner and Exit (`ADM-13`, `NAV-19`)
+- `/admin/reports` (`ADM-14`), `/admin/plans` (`ADM-08`, `ADM-09`), `/admin/offers` (`ADM-11`; customers accept them in phase 7), `/admin/sso`, `/admin/admins` and `/admin/feedback`
 
 ## Getting started
 

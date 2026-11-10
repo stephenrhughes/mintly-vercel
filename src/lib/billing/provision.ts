@@ -142,8 +142,13 @@ async function sync(
   const sub = await stripe.retrieveSubscription(stripeSubscriptionId);
   const record = deriveSubscriptionRecord(sub);
 
-  // EISCD is provisioned by admins (plan §6.7, phase 5); nothing to do here.
-  if (record.product === "eiscd") return { status: "skipped", reason: "eiscd" };
+  // EISCD has no online checkout (EIS-01): admins set it up for an
+  // organisation (plan §6.7, ADM-12). Once that organisation exists, its
+  // EISCD subscriptions are provisioned like any other; an EISCD
+  // subscription for an unknown customer is left alone.
+  if (record.product === "eiscd" && !(await store.findOrgByCustomer(record.stripeCustomerId))) {
+    return { status: "skipped", reason: "eiscd" };
+  }
   if (record.missingPlanMetadata && !record.expired) {
     throw new MissingPlanMetadataError(record.stripePriceId);
   }
@@ -156,7 +161,7 @@ async function sync(
     if (!buyer || !isLiveStatus(record.status)) {
       // Nobody to make the owner, or nothing live to provision. A
       // subscription made outside checkout belongs to an existing
-      // organisation, or to admin set-up (ADM-12, phase 5).
+      // organisation: admin set-up (ADM-12) creates it first.
       return { status: "skipped", reason: "no_organisation" };
     }
     org = await createOrganisation(deps, sub, record, buyer.userId);
