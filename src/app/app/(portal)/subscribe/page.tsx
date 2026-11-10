@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { AccountUnavailableNotice } from "@/components/app/pending-review-notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireUser } from "@/lib/auth/session";
+import { requirePortalViewer } from "@/lib/auth/session";
 import { findBuyer } from "@/lib/billing/checkout";
 import { PLAN_INTENT_COOKIE, resolveIntent } from "@/lib/billing/plan-intent";
 import { type BillingInterval, PLAN_TIERS, type PlanTier } from "@/lib/billing/plans";
@@ -34,7 +34,7 @@ export default function SubscribePage(props: PageProps<"/app/subscribe">) {
 // BUY-01 to BUY-05: choose a plan and go to Stripe Checkout.
 async function Subscribe({ searchParams }: PageProps<"/app/subscribe">) {
   const [user, params, cookieStore] = await Promise.all([
-    requireUser("/subscribe"),
+    requirePortalViewer("/subscribe"),
     searchParams,
     cookies(),
   ]);

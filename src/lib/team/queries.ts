@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { OrgRole } from "@/lib/nav";
-import { createClient } from "@/lib/supabase/server";
+import { portalDb } from "@/lib/auth/session";
 
 import { personName } from "./operations";
 
@@ -37,7 +37,7 @@ export type TeamView = {
 const roleOrder: Record<OrgRole, number> = { owner: 0, developer: 1, member: 2 };
 
 export async function getTeam(orgId: string, opts: { withInvites: boolean }): Promise<TeamView> {
-  const supabase = await createClient();
+  const supabase = await portalDb();
   const [memberships, seats, invites] = await Promise.all([
     supabase
       .from("memberships")
@@ -113,7 +113,7 @@ type SeatRow = { seat_limit: number | null; members: number; pending_invites: nu
 
 /** Seats used and the limit (TEAM-03), for the caller's own organisation. */
 export async function getSeatUsage(orgId: string): Promise<SeatUsage> {
-  const supabase = await createClient();
+  const supabase = await portalDb();
   const { data, error } = await supabase.rpc("org_seat_usage", { p_org: orgId });
   if (error) throw new Error(`reading seats failed: ${error.message}`);
   const row = (data as SeatRow[] | null)?.[0];

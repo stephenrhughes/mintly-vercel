@@ -5,7 +5,7 @@ import { Suspense } from "react";
 import { PageHeader } from "@/components/app/page-header";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireUser } from "@/lib/auth/session";
+import { requirePortalViewer } from "@/lib/auth/session";
 import { createClient } from "@/lib/supabase/server";
 
 import { EnrollMfa } from "./enroll-mfa";
@@ -28,7 +28,23 @@ export default function SecurityPage(props: PageProps<"/app/account/security">) 
 // SEC-01: MFA with an authenticator app. Required for Mintly admins,
 // optional for customers.
 async function Security({ searchParams }: PageProps<"/app/account/security">) {
-  const [user, params] = await Promise.all([requireUser("/account/security"), searchParams]);
+  const [user, params] = await Promise.all([
+    requirePortalViewer("/account/security"),
+    searchParams,
+  ]);
+  if (user.viewAs) {
+    // ADM-13: someone else's authenticator apps are theirs alone.
+    return (
+      <div className="grid gap-8">
+        <PageHeader title={title} description={description} />
+        <Alert>
+          <AlertDescription>
+            Two-step verification settings aren&apos;t shown while viewing as a customer.
+          </AlertDescription>
+        </Alert>
+      </div>
+    );
+  }
   const supabase = await createClient();
   const { data } = await supabase.auth.mfa.listFactors();
   const factors = data?.totp ?? [];

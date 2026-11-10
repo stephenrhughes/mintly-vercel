@@ -160,6 +160,9 @@ const adminPages = [
   "/admin/sso",
   "/admin/customers/new",
   "/admin/offers",
+  "/admin/view-as/00000000-0000-0000-0000-000000000000",
+  "/admin/reports",
+  "/admin/feedback",
 ];
 
 test("the admin pages need a signed-in admin (plan §6.8)", async ({ page }) => {
@@ -169,6 +172,27 @@ test("the admin pages need a signed-in admin (plan §6.8)", async ({ page }) => 
     expect(url.pathname, path).toBe("/app/sign-in");
     expect(url.searchParams.get("next"), path).toBe(path);
   }
+});
+
+test("nothing can be changed while viewing as a customer (ADM-13)", async ({
+  request,
+  baseURL,
+}) => {
+  const headers = { cookie: "mintly_view_as=anything" };
+  // A Server Action or form post to any app page is refused at the proxy...
+  expect((await request.post("/app/team", { headers, data: "x=1" })).status()).toBe(403);
+  expect((await request.post("/app/admin/organisations", { headers, data: "x=1" })).status()).toBe(
+    403,
+  );
+  // ...and so are checks through the Tools proxy.
+  const check = await request.post("/api/check", {
+    headers: { ...headers, origin: new URL(baseURL!).origin },
+    data: { kind: "sortcode", sortCode: "424242" },
+  });
+  expect(check.status()).toBe(403);
+  expect((await check.json()).error).toContain("viewing as a customer");
+  // Reads still work (here, the sign-in redirect).
+  expect((await request.get("/app/team", { headers, maxRedirects: 0 })).status()).toBe(307);
 });
 
 test("changing plan needs a signed-in user (PLAN-01)", async ({ page }) => {

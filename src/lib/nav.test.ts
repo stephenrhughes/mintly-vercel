@@ -57,18 +57,10 @@ describe("buildNav by role", () => {
     expect(group?.items[0].disabledReason).toBeUndefined();
   });
 
-  it("opens the admin pages phase 5 has shipped", () => {
+  it("opens every admin page now that phase 5 has shipped them", () => {
     const admin = buildNav({ role: null, reviewStatus: null, isMintlyAdmin: true });
     const items = admin.find((g) => g.id === "admin")?.items ?? [];
-    const open = items.filter((i) => !i.disabledReason).map((i) => i.id);
-    expect(open).toEqual(
-      expect.arrayContaining([
-        "admin-overview",
-        "admin-reviews",
-        "admin-organisations",
-        "admin-plans",
-      ]),
-    );
+    expect(items.filter((i) => i.disabledReason).map((i) => i.id)).toEqual([]);
   });
 });
 

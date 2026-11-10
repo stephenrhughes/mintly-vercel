@@ -14,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { requireUser } from "@/lib/auth/session";
+import { portalDb, requirePortalViewer } from "@/lib/auth/session";
 import { recommendPlan } from "@/lib/billing/change-plan";
 import { isPlanTier, PLANS } from "@/lib/billing/plans";
 import { getOrgSubscriptions } from "@/lib/billing/queries";
@@ -23,7 +23,6 @@ import { priceMeta } from "@/lib/billing/subscription-record";
 import { appPath } from "@/lib/hosts";
 import { getPrice } from "@/lib/stripe/catalogue";
 import { getStripe } from "@/lib/stripe/client";
-import { createClient } from "@/lib/supabase/server";
 import { getOrgUsage, type OrgUsage } from "@/lib/usage/queries";
 import { numberWithCommas, projectedMonthlyUsage } from "@/lib/usage/series";
 
@@ -58,7 +57,7 @@ const syncedText = (date: Date | null) =>
 // Usage (plan §6.4, MON-*): read from usage_daily, which the nightly job
 // fills from the API platform's statistics (Q3).
 async function Usage() {
-  const user = await requireUser("/usage");
+  const user = await requirePortalViewer("/usage");
   const membership = user.membership;
 
   if (!membership) {
@@ -183,7 +182,7 @@ async function AllowanceBanner({
   const plan = PLANS[tier];
   if (projected <= plan.includedRequestsCount) return null;
 
-  const supabase = await createClient();
+  const supabase = await portalDb();
   const { count } = await supabase
     .from("memberships")
     .select("user_id", { count: "exact", head: true })

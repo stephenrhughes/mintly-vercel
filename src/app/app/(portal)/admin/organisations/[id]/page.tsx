@@ -222,9 +222,17 @@ async function Organisation({ params }: PageProps<"/app/admin/organisations/[id]
                   <Td>{roleLabels[m.role]}</Td>
                   <Td>{longDate(m.joinedAt)}</Td>
                   <Td>
-                    {m.role === "owner" ? null : (
-                      <MemberForms orgId={org.id} userId={m.userId} role={m.role} />
-                    )}
+                    <div className="grid gap-2">
+                      <Link
+                        href={appPath(`/admin/view-as/${m.userId}`)}
+                        className="text-sm font-medium text-primary hover:underline"
+                      >
+                        View as {m.name ?? "them"}
+                      </Link>
+                      {m.role === "owner" ? null : (
+                        <MemberForms orgId={org.id} userId={m.userId} role={m.role} />
+                      )}
+                    </div>
                   </Td>
                 </Tr>
               ))}

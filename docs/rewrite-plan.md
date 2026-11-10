@@ -458,7 +458,11 @@ If the APIs ever move off AWS (Q9), only these three files change.
 | `/app/subscribe` | Users with no live subscription |
 | `/app/welcome` | After checkout |
 
-**Admin:** `/admin`, `/admin/reports`, `/admin/reviews`, `/admin/customers/new`, `/admin/view-as/[userId]`, `/admin/organisations`, `/admin/organisations/[id]`, `/admin/plans`, `/admin/offers`, `/admin/sso`, `/admin/admins`, `/admin/feedback`
+**Admin:** `/admin`, `/admin/reports`, `/admin/reviews`, `/admin/customers/new`, `/admin/view-as/[userId]`, `/admin/view-as/exit`, `/admin/organisations`, `/admin/organisations/[id]`, `/admin/plans`, `/admin/offers`, `/admin/sso`, `/admin/admins`, `/admin/feedback`
+
+As built in phase 5:
+- **View as** (`ADM-13`) is a signed, hour-long cookie that only the admin who started it can use. While it's set, portal pages read as the viewed user through the service role, filtered by their organisation. The proxy refuses every write except sign-out and `/admin/view-as/exit`, which is a GET so the banner's **Exit** link works.
+- **Plans health** (`ADM-08`, `ADM-09`) treats a price as a plan if it has `product` metadata or a live customer, because this app's prices carry `product`, `tier` and `interval` rather than the old `mintlyPlan` flag.
 
 **API route handlers:**
 

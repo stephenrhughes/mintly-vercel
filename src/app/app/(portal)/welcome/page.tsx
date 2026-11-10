@@ -6,7 +6,7 @@ import { PageHeader } from "@/components/app/page-header";
 import { PendingReviewNotice } from "@/components/app/pending-review-notice";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireUser } from "@/lib/auth/session";
+import { requirePortalViewer } from "@/lib/auth/session";
 import { appPath } from "@/lib/hosts";
 import { siteConfig } from "@/lib/site";
 import { getStripe } from "@/lib/stripe/client";
@@ -40,7 +40,7 @@ async function ownsSession(sessionId: string, userId: string): Promise<boolean> 
 // BUY-06: where Stripe Checkout returns. The webhook provisions the account;
 // this page waits for it, then sends the user on.
 async function Welcome({ searchParams }: PageProps<"/app/welcome">) {
-  const [user, params] = await Promise.all([requireUser("/welcome"), searchParams]);
+  const [user, params] = await Promise.all([requirePortalViewer("/welcome"), searchParams]);
   const sessionId = typeof params.session_id === "string" ? params.session_id : null;
   const membership = user.membership;
 

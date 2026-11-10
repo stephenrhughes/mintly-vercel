@@ -1,5 +1,6 @@
 import { type NextRequest, NextResponse } from "next/server";
 
+import { VIEW_AS_COOKIE } from "@/lib/admin/view-as-token";
 import { hintCookieOptions, SIGNED_IN_HINT_COOKIE } from "@/lib/auth/hint-cookie";
 import { clearPendingEmail } from "@/lib/auth/pending-email";
 import { salesHomeUrl } from "@/lib/auth/urls";
@@ -30,5 +31,7 @@ export async function POST(request: NextRequest) {
         );
   const response = NextResponse.redirect(new URL(target, request.url), 303);
   response.cookies.set(SIGNED_IN_HINT_COOKIE, "", { ...hintCookieOptions(), maxAge: 0 });
+  // An admin's view-as session ends with their sign-in (ADM-13).
+  response.cookies.delete(VIEW_AS_COOKIE);
   return response;
 }

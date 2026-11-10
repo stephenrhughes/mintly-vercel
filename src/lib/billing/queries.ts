@@ -2,7 +2,7 @@ import "server-only";
 
 import { getPrice } from "@/lib/stripe/catalogue";
 import { getStripe } from "@/lib/stripe/client";
-import { createClient } from "@/lib/supabase/server";
+import { portalDb } from "@/lib/auth/session";
 
 import { planLabel } from "./plan-name";
 import type { SubscriptionView } from "./status";
@@ -59,7 +59,7 @@ export type OrgSubscriptions = {
 };
 
 export async function getOrgSubscriptions(orgId: string): Promise<OrgSubscriptions> {
-  const supabase = await createClient();
+  const supabase = await portalDb();
   const { data, error } = await supabase
     .from("subscriptions")
     .select(

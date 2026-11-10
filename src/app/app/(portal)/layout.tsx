@@ -1,7 +1,8 @@
 import { Suspense } from "react";
 
 import { AppSidebar } from "@/components/app/app-sidebar";
-import { requireUser } from "@/lib/auth/session";
+import { ViewAsBanner } from "@/components/app/view-as-banner";
+import { requirePortalViewer } from "@/lib/auth/session";
 import { appPath } from "@/lib/hosts";
 import { buildNav, orgStatusLabel, roleLabels } from "@/lib/nav";
 import { siteConfig } from "@/lib/site";
@@ -22,7 +23,12 @@ export default function PortalLayout({ children }: LayoutProps<"/app">) {
           <PortalSidebar />
         </Suspense>
         <main id="content" className="min-w-0 flex-1 px-4 py-6 sm:px-8 lg:py-10">
-          <div className="mx-auto max-w-5xl">{children}</div>
+          <div className="mx-auto max-w-5xl">
+            <Suspense fallback={null}>
+              <ViewAsBanner />
+            </Suspense>
+            {children}
+          </div>
         </main>
       </div>
     </>
@@ -30,7 +36,7 @@ export default function PortalLayout({ children }: LayoutProps<"/app">) {
 }
 
 async function PortalSidebar() {
-  const user = await requireUser();
+  const user = await requirePortalViewer();
   const membership = user.membership;
   const groups = buildNav({
     role: membership?.role ?? null,

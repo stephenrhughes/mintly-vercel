@@ -8,7 +8,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { requireUser } from "@/lib/auth/session";
+import { requirePortalViewer } from "@/lib/auth/session";
 import { longDate } from "@/lib/billing/format";
 import { appPath } from "@/lib/hosts";
 import { roleLabels } from "@/lib/nav";
@@ -41,7 +41,7 @@ const doneText: Record<string, string> = {
 // TEAM-02, TEAM-03: everyone sees the team and the seats; only the owner
 // changes it (plan §3, §6.6).
 async function Team({ searchParams }: PageProps<"/app/team">) {
-  const [user, params] = await Promise.all([requireUser("/team"), searchParams]);
+  const [user, params] = await Promise.all([requirePortalViewer("/team"), searchParams]);
   const done = typeof params.done === "string" ? doneText[params.done] : undefined;
   const membership = user.membership;
 

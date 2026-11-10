@@ -1,5 +1,6 @@
 import "server-only";
 
+import { VIEW_AS_COOKIE } from "@/lib/admin/view-as-guard";
 import { getCurrentUser } from "@/lib/auth/session";
 
 import { checkLogger, resolveCheckAccess, transportFor } from "./access-server";
@@ -17,6 +18,11 @@ const json = (body: unknown, status = 200) =>
 export async function handleCheck(request: Request, mode: "single" | "bulk"): Promise<Response> {
   const problem = requestProblem(request);
   if (problem) return json({ error: problem.error }, problem.status);
+
+  // ADM-13: no checks while an admin is viewing the portal as a customer.
+  if (new RegExp(`(?:^|;\\s*)${VIEW_AS_COOKIE}=`).test(request.headers.get("cookie") ?? "")) {
+    return json({ error: "You're viewing as a customer, so checks are turned off." }, 403);
+  }
 
   const user = await getCurrentUser();
   // MFA, once turned on, must be completed for every request (SEC-01).

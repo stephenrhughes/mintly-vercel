@@ -13,7 +13,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { requireUser } from "@/lib/auth/session";
+import { requirePortalViewer } from "@/lib/auth/session";
 import { canSeeKey } from "@/lib/billing/permissions";
 import { getOrgSubscriptions, planNameFor } from "@/lib/billing/queries";
 import { describeSubscription } from "@/lib/billing/status";
@@ -34,7 +34,7 @@ export default function OverviewPage(props: PageProps<"/app">) {
 }
 
 async function Overview({ searchParams }: PageProps<"/app">) {
-  const [user, params] = await Promise.all([requireUser("/"), searchParams]);
+  const [user, params] = await Promise.all([requirePortalViewer("/"), searchParams]);
   const membership = user.membership;
   const subscriptions = membership ? await getOrgSubscriptions(membership.orgId) : null;
   const sub =
