@@ -1,0 +1,112 @@
+export const metadata = {
+  "heading": "Bank Validation APIs: How They Work and Why Finance Teams Use Them",
+  "readTime": "5 mins",
+  "published": "2023-07-05",
+  "modified": "2026-09-09",
+  "faq": [
+    {
+      "question": "What is a bank account validation API?",
+      "answer": "<p>A bank account validation API lets your software confirm, in real time, that a UK sort code and account number are valid before you attempt a payment. It checks the sort code against the Extended Industry Sort Code Directory (EISCD) and applies modulus checking to the account number, returning the bank, branch and supported payment types.</p>"
+    },
+    {
+      "question": "How is a bank validation API different from Confirmation of Payee?",
+      "answer": "<p>Modulus checking and sort code validation confirm whether an account is structurally valid - \"is this a real, correctly formed account?\" Confirmation of Payee (CoP) is a separate service that checks whether the account holder's name matches. Many teams run validation first as a fast, low-cost filter, then apply CoP where name matching is required. Mintly provides the validation layer.</p>"
+    },
+    {
+      "question": "How do I integrate a bank validation API?",
+      "answer": "<p>Mintly's API is a REST API: you authenticate with an API key in the x-api-key header and make a single GET request per check. We provide step-by-step integration guides for Python, C#/.NET, Node.js and Salesforce, plus no-code options via Zapier and Power Automate.</p>"
+    },
+    {
+      "question": "Can a bank validation API handle high volumes?",
+      "answer": "<p>Yes. Mintly returns results in under 50ms and scales to tens of thousands of checks a month, with volume pricing from 0.8p per check. See our guide to <a href='/articles/high-volume-bank-account-validation-api'>high-volume bank account validation</a> if you need 50,000+ checks a month.</p>"
+    }
+  ],
+  "related": [
+    {
+      "title": "High-volume bank account validation API",
+      "href": "/articles/high-volume-bank-account-validation-api"
+    },
+    {
+      "title": "What is modulus checking and why should I do it?",
+      "href": "/articles/modulus-checking"
+    },
+    {
+      "title": "Our guide to automated bank account checking",
+      "href": "/articles/automation"
+    }
+  ]
+};
+
+A bank validation API answers one question, in about the time it takes a web form to submit: is this sort code and account number a real, well-formed pair, and what can it be used for?
+
+That sounds narrow, and it is. It is also the check that removes most of the bad bank details a business ever sees, because most bad bank details are not fraud - they are somebody transposing two digits off a photograph of a bank card at half past four on a Friday.
+
+## The three levels of "validation"
+
+The word gets used for three quite different things, at three quite different price points. Knowing which one you are being sold is the single most useful thing in this article.
+
+<Image src="/assets/img/theme/checking-number.png" alt="Using a computer to automate bank account and sort code checks" width={400} height={1000} />
+
+1.  **Format checking.** Six digits, then eight digits. This is a regular expression, it is free, and it catches almost nothing - every wrong-but-plausible number passes.
+    
+2.  **Modulus checking and sort code lookup.** The bank's own published arithmetic applied to the pair, plus a directory lookup for the branch. This is what a bank validation API means, and what the rest of this article is about.
+    
+3.  **Confirmation of Payee.** Name matching against the account holder's actual name at their bank. A separate scheme, materially more expensive per check, and the only one of the three that tells you anything about who owns the account.
+    
+
+Levels two and three are complements rather than alternatives. Running modulus checking first is a cheap filter: there is no point paying for a name match on an account number that cannot exist.
+
+## What the API actually does
+
+Behind a single request sit two checks against authoritative data.
+
+### Sort code lookup
+
+The six-digit sort code is looked up in the [Extended Industry Sort Code Directory](/articles/eiscd-data-file) , the Pay.UK-maintained register of every UK branch. That returns the owning bank, the branch, and - the field people underuse - which payment schemes that branch supports. Not every branch accepts Direct Debits, and knowing before you set up a mandate is worth more than knowing afterwards.
+
+### Modulus checking
+
+The sort code and account number are then run through the weighting table that the account's own bank has published for that range. [Modulus checking](/articles/modulus-checking) catches every single-digit error and essentially every transposition. You can try it on a real account through our [free sort code checker](/sort-code-checker) before writing any code.
+
+What neither check does is confirm the account is open or belongs to a particular person. No third party can query UK account status directly - that is what Confirmation of Payee is for, and it is worth being sceptical of any provider whose copy blurs the two.
+
+## Integrating it
+
+A good validation API is a plain REST API that drops into any stack. With Mintly you authenticate using an API key in the `x-api-key` header and make a single GET request per check. Here's a full example that validates a sort code and account number:
+
+```bash
+curl https://api.mintly.uk/bankAccount/v1/sortcode/424242/account/42424242 \
+  -H "x-api-key: YOUR_API_KEY"
+```
+The response returns the branch data, supported payment types and a validation status - everything you need to decide whether to proceed with a payment. Because it's a standard REST call, you can integrate it in minutes; we maintain step-by-step guides for [Python](/integration-guides/python-integration), [C#/.NET](/integration-guides/csharp-integration), [Node.js](/integration-guides/nodejs-integration) and [Salesforce](/integration-guides/salesforce-integration) , plus no-code options via [Zapier](/integration-guides/zapier-integration) and [Power Automate](/integration-guides/power-automate-integration) .
+
+## Decide what happens when the API is unavailable
+
+This is the design decision most teams make by accident, and it is worth making on purpose. If you validate inside a sign-up form and the validation service is slow or down, what does your form do?
+
+Blocking the submission means a third party's outage becomes your outage, and you lose customers who were doing nothing wrong. The better pattern for customer-facing flows is to fail open: set a short timeout, let the submission through, record that the check did not complete, and re-run it in the batch job before payment. You keep the protection where it matters - before money moves - without putting your conversion rate on someone else's uptime.
+
+For a back-office payment run, invert it. There is no user waiting, so a failed check should stop the run and get looked at.
+
+## What to ask before you choose one
+
+Most providers in this space return similar answers, because they are all applying the same published rules to the same directory. The differences that show up in production are elsewhere:
+
+-   **How current is the sort code data, and how do you know?** The EISCD changes weekly. Ask how often the provider ingests it and whether they are a licensed distributor.
+    
+-   **Does the response distinguish "failed" from "no rule available"?** Some sort codes have no published modulus rule. If the API collapses those into a single failure state, you will reject legitimate customers and never find out.
+    
+-   **What is the pricing model at your actual volume?** Per-check pricing that falls with volume is easy to forecast. Credit bundles that expire are not.
+    
+-   **Is there a bulk route as well as the API?** Nearly every team eventually wants to check a file of existing records, and writing a script to loop the API is a worse experience than a CSV upload.
+    
+-   **What happens to the data after the check?** Bank details are personal data under UK GDPR. Ask about retention and sub-processors, and ask for the DPA.
+    
+
+## How Mintly answers those
+
+We are a VocaLink-authorised distributor of the EISCD and refresh from the source weekly, so the branch data is the same data the banks are working from. Responses separate a failed check from an unavailable rule. Pricing is per check and falls with volume, with no expiring credits. Alongside the API there is a web tool for one-off checks and CSV upload for files. We are Cyber Essentials certified and a Crown Commercial Service G-Cloud supplier.
+
+There is a 14-day free trial, and the most useful way to spend it is to run a file of bank details you already hold through the bulk check. That tells you whether you have a problem worth solving before you commit to an integration. If you are validating tens of thousands of accounts a month, our guide to [high-volume bank account validation](/articles/high-volume-bank-account-validation-api) covers the economics in more detail.
+
+## Frequently Asked Questions

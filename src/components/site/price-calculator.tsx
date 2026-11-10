@@ -60,7 +60,7 @@ export function PriceCalculator() {
     });
 
   return (
-    <div className="grid gap-6 lg:grid-cols-[1fr_1fr]">
+    <div className="grid grid-cols-[minmax(0,1fr)] gap-6 lg:grid-cols-2">
       <form
         className="space-y-6 rounded-xl border bg-card p-6 shadow-xs"
         onSubmit={(e) => e.preventDefault()}

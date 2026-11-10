@@ -1,0 +1,66 @@
+export const metadata = {
+  "heading": "Why Check Bank Account Details Before Making a Payment?",
+  "readTime": "4 mins",
+  "related": [
+    {
+      "title": "What is modulus checking and why should I do it?",
+      "href": "/articles/modulus-checking"
+    },
+    {
+      "title": "Bank validation APIs: how they work",
+      "href": "/articles/bank-validation-api"
+    },
+    {
+      "title": "What is a sort code and why should I check it?",
+      "href": "/articles/sortcodes"
+    }
+  ],
+  "published": "2023-07-05",
+  "modified": "2026-09-09"
+};
+
+Here is the part of UK payments law that surprises people the first time they meet it. Under the Payment Services Regulations, the sort code and account number are the "unique identifier" for a payment. Your bank is entitled to execute the instruction on those digits alone. If they are wrong and the money reaches someone else's account, your bank has done exactly what it was asked to do, and the liability is not theirs.
+
+That is the real reason to validate before you pay. Not tidiness - the fact that a mistyped digit moves the problem from something a bank can fix into something that depends on the goodwill of a stranger.
+
+## What happens when a payment goes to the wrong account
+
+If the account details do not exist or fail the bank's own checks, the payment bounces. That is the good outcome: annoying, but recoverable in a day or two.
+
+<Image src="/assets/img/theme/person_writing.jpg" alt="Using Mintly's software to check account numbers for bank" width={400} height={1000} />
+
+The bad outcome is a typo that lands on a real account belonging to someone else. Your bank will contact the receiving bank, which contacts its customer. If that customer agrees the money is not theirs, you get it back in a few weeks. If they dispute it, or simply do not reply, the bank cannot take it from their account without authority - and your remaining option is the courts, for a sum that usually is not worth suing over. People do lose money this way, permanently, over one transposed digit.
+
+## What validation catches, and what it does not
+
+Being straight about this matters, because the marketing in this category is frequently misleading.
+
+**What it catches.** [Modulus checking](/articles/modulus-checking) applies the bank's own published arithmetic to the sort code and account number, so a transposition or a wrong digit almost always fails the check. A sort code lookup against the [EISCD](/articles/eiscd-data-file) confirms the branch exists and tells you which payment schemes it supports - which is how you find out an account cannot take Direct Debits before you set up the mandate rather than after.
+
+**What it does not catch.** Validation cannot tell you an account is open, or that it belongs to the person who gave you the details. There is no live register of UK bank accounts that third parties can query. Anything claiming to confirm an account exists is either describing name matching through Confirmation of Payee, or overstating what it does. Both checks are worth running; they answer different questions.
+
+## Direct Debit and Bacs collections
+
+If you collect rather than pay, the failure mode is different but the fix is the same. A Direct Debit Instruction with bad details is rejected by the payer's bank days after you submitted it, by which point you have already told the customer their payment is set up. For [paperless sign-ups](/articles/auddis), modulus checking the details before lodgement is not just sensible - the Direct Debit scheme rules require it.
+
+## Fraud, and the reimbursement rules
+
+Fabricated bank details are a common feature of onboarding fraud: plausible-looking numbers, entered quickly, never intended to receive anything. A structural check rejects invented account numbers immediately, which makes it a cheap first filter before anything more expensive runs.
+
+The regulatory context tightened in 2024. Since 7 October that year, the Payment Systems Regulator's mandatory reimbursement rules require payment firms to refund most victims of authorised push payment fraud, with the cost shared between the sending and receiving firms. That has made both sides of a payment considerably more interested in whether the details were checked before money moved.
+
+## The compliance question, answered honestly
+
+Bank account validation is not KYC and does not satisfy an AML obligation on its own. It is a data quality control that sits underneath those processes. What it gives you is a defensible record: you can show that details were checked at the point of capture, what the result was, and when. That is useful in an audit. It is not a substitute for identity verification, and anyone selling it as one is doing you no favours.
+
+## Working out whether it is worth it
+
+Rather than quoting an industry average at you, the number that matters is your own. Take last quarter's failed payments and rejected mandates, count how many traced back to incorrect details, and multiply by what it costs you to unpick one - the support time, the re-run, the bank charge if there was one, and the customer conversation.
+
+Most finance teams who do this arithmetic are surprised, usually because the admin time is the large number and nobody had ever added it up. If it comes out small, you probably do not need to automate anything, and we would rather tell you that than sell you a subscription.
+
+## Where Mintly fits
+
+We do the validation layer: sort code lookup and modulus checking, returning the bank, branch and supported payment types in a single call. You can run it [one account at a time](/sort-code-checker), as a CSV upload, or through [the API](/articles/bank-validation-api). If you are checking tens of thousands a month, our guide to [high-volume validation](/articles/high-volume-bank-account-validation-api) covers the economics of that properly.
+
+The [pricing page](/pricing) has the per-check costs, and the free trial lets you run your own data through before deciding anything.

@@ -146,6 +146,7 @@ export const siteRoutes: SiteRoute[] = [
       "Mintly EISCD API Reference documents. Find out how easy our APIs are to use, helping you obtain the EISCD through a RESTful API.",
     section: "developers",
     lastModified: "2026-09-08",
+    image: EISCD_OG_IMAGE,
   },
   {
     path: "/eiscd-docs/weekly/v1",
@@ -155,6 +156,7 @@ export const siteRoutes: SiteRoute[] = [
       "Reference for version 1 of the Mintly EISCD API, still available and unchanged for existing integrations. Version 2 is the current release.",
     section: "developers",
     lastModified: "2026-09-08",
+    image: EISCD_OG_IMAGE,
   },
   {
     path: "/eiscd-docs/monthly/v2",
@@ -164,6 +166,7 @@ export const siteRoutes: SiteRoute[] = [
       "Mintly monthly EISCD API Reference documents. Download the complete Extended Industry Sort Code Directory through a RESTful API on a monthly plan.",
     section: "developers",
     lastModified: "2026-09-08",
+    image: EISCD_OG_IMAGE,
   },
   {
     path: "/integration-guides",
@@ -255,47 +258,47 @@ export const siteRoutes: SiteRoute[] = [
     section: "legal",
     lastModified: "2024-02-09",
   },
-  ...article("gdpr-and-security", "GDPR and Security", "2026-01-21", {
+  ...article("gdpr-and-security", "GDPR and Security", "2026-09-09", {
     title: "Bank Account Validation and GDPR: Handling Data Securely | Mintly",
     description:
       "Bank details are sensitive data under UK GDPR. Learn how secure, automated bank account validation reduces breach risk and keeps your firm compliant.",
   }),
-  ...article("automation", "Automating Bank Account Checks", "2026-05-13", {
+  ...article("automation", "Automating Bank Account Checks", "2026-09-09", {
     title: "How to Automate Bank Account Checking with an API | Mintly",
     description:
       "Automate UK bank account and sort code checks with an API. Learn how automated validation cuts errors, saves time and scales to thousands of checks a day.",
   }),
-  ...article("bacs-and-direct-debit", "Bacs and Direct Debit", "2026-04-23", {
+  ...article("bacs-and-direct-debit", "Bacs and Direct Debit", "2026-09-09", {
     title: "Bacs and Direct Debit Explained: Why Data Validation Matters | Mintly",
     description:
       "How do Bacs and Direct Debit work, and why does data validation matter? Learn how validating sort codes and account numbers prevents failed UK payments.",
   }),
-  ...article("bank-validation-api", "Bank Validation APIs", "2026-02-17", {
+  ...article("bank-validation-api", "Bank Validation APIs", "2026-09-09", {
     title: "Bank Validation API: How They Work and Why Companies Use Them | Mintly",
     description:
       "What is a bank account validation API, how does it work, and what should you look for? A practical guide to real-time UK sort code and account validation.",
   }),
-  ...article("sortcodes", "UK Sort Codes", "2026-06-09", {
+  ...article("sortcodes", "UK Sort Codes", "2026-09-09", {
     title: "What Is a UK Sort Code and How Do You Check It? | Mintly",
     description:
       "What is a UK sort code, where do you find it, and how do you validate one? Learn how sort code checking works and how to automate it with an API.",
   }),
-  ...article("swift-iban", "SWIFT/BIC and IBAN", "2026-05-23", {
+  ...article("swift-iban", "SWIFT/BIC and IBAN", "2026-09-09", {
     title: "What Are SWIFT/BIC Codes and IBANs? A Guide to Validation | Mintly",
     description:
       "What are SWIFT/BIC codes and IBANs, and how do you validate them? Learn how international bank codes work and how to check them alongside UK bank accounts.",
   }),
-  ...article("auddis", "Pre-AUDDIS Checks", "2026-03-16", {
+  ...article("auddis", "Pre-AUDDIS Checks", "2026-09-09", {
     title: "Pre-AUDDIS Checks: Validate Direct Debit Details Before Bacs | Mintly",
     description:
       "Reduce Direct Debit rejections with pre-AUDDIS checks. Learn how validating sort codes and account numbers before Bacs submission keeps your mandates clean.",
   }),
-  ...article("modulus-checking", "What is Modulus Checking?", "2026-06-01", {
+  ...article("modulus-checking", "What is Modulus Checking?", "2026-09-09", {
     title: "What Is Modulus Checking? Bank Account Validation Explained | Mintly",
     description:
       "What is modulus checking, how do the Modulus 10 and Modulus 11 algorithms work, and how do you automate it? A clear guide to UK bank account validation.",
   }),
-  ...article("reasons", "Why Check Bank Details?", "2026-01-11", {
+  ...article("reasons", "Why Check Bank Details?", "2026-09-09", {
     title: "Why Check Bank Account Details Before Making Payments? | Mintly",
     description:
       "Why should you validate bank account and sort code details before paying? Learn how bank account validation prevents failed payments, fraud and compliance risk.",
@@ -303,35 +306,35 @@ export const siteRoutes: SiteRoute[] = [
   ...article(
     "high-volume-bank-account-validation-api",
     "High-Volume Validation API",
-    "2026-07-16",
+    "2026-09-09",
     {
       title: "High-Volume UK Bank Account Validation API For Enterprise | Mintly",
       description:
         "Validate 50,000+ UK bank accounts a month via API. Real-time sort code and modulus checking under 50ms, from 0.8p per check, with bulk CSV and developer guides.",
     },
   ),
-  ...article("eiscd-data-file", "The EISCD Data File", "2026-04-17", {
+  ...article("eiscd-data-file", "The EISCD Data File", "2026-09-09", {
     title: "EISCD Data File: UK Sort Code Directory",
     description:
       "Download the UK Extended Industry Sort Code Directory (EISCD) as a data file. Validate sort codes, prevent payment failures and stay compliant.",
     image: EISCD_OG_IMAGE,
   }),
-  ...guide("salesforce-integration", "Salesforce", "2026-06-02", {
+  ...guide("salesforce-integration", "Salesforce", "2024-09-02", {
     title: "Leverage automation in Salesforce with Mintly Bank Validation tools",
     description:
       "Step by step guide to setting up Salesforce to integrate with Mintly's APIs. Leverage the power of Zapier and Mintly to automate your bank account checks.",
   }),
-  ...guide("power-automate-integration", "Power Automate", "2025-06-03", {
+  ...guide("power-automate-integration", "Power Automate", "2024-09-02", {
     title: "Using Power Automate with Mintly Bank Account Validation tools",
     description:
       "Step by step guide to setting up Power Automate to integrate with Mintly's APIs. Leverage the power of Mintly to automate your bank account checks.",
   }),
-  ...guide("nodejs-integration", "Node.js", "2025-06-03", {
+  ...guide("nodejs-integration", "Node.js", "2025-04-29", {
     title: "Integrate your Node.js App with Mintly Bank Validation APIs",
     description:
       "Step by step guide to setting up your Node.js app to integrate with Mintly's APIs. Leverage the power of Mintly to automate your bank account checks.",
   }),
-  ...guide("python-integration", "Python", "2026-06-01", {
+  ...guide("python-integration", "Python", "2025-04-29", {
     title: "Integrate your Python App with Mintly Bank Validation APIs",
     description:
       "Step by step guide to setting up your Python app to integrate with Mintly's APIs. Leverage the power of Mintly to automate your bank account checks.",
@@ -341,12 +344,12 @@ export const siteRoutes: SiteRoute[] = [
     description:
       "Step by step guide to setting up your C# .NET app to integrate with Mintly's APIs. Leverage the power of Mintly to automate your bank account checks.",
   }),
-  ...guide("zapier-integration", "Zapier", "2026-05-26", {
+  ...guide("zapier-integration", "Zapier", "2025-04-29", {
     title: "Integrate A Zapier Workflow with Mintly Bank Validation APIs",
     description:
       "Step by step guide to setting up Zapier to integrate with Mintly's APIs. Leverage the power of Zapier and Mintly to automate your bank account checks.",
   }),
-  ...guide("mcp-server-python", "MCP Server (Python)", "2026-06-14", {
+  ...guide("mcp-server-python", "MCP Server (Python)", "2025-06-10", {
     title: "Build a MCP Server: connecting AI Chatbots to the Mintly API",
     description:
       "Step by step guide to setting up an MCP Server to integrate with Mintly's APIs. Leverage the power of Mintly to automate your bank account checks.",

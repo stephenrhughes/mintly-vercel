@@ -1,0 +1,180 @@
+export const metadata = {
+  "heading": "Using Mintly Bank Validation APIs with Python",
+  "readTime": "12 mins",
+  "related": [
+    {
+      "title": "Connecting to the Mintly API with Node.js",
+      "href": "/integration-guides/nodejs-integration"
+    },
+    {
+      "title": "Integration Guides: Connect Mintly with anything",
+      "href": "/integration-guides"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2025-04-29",
+  "modified": "2025-04-29"
+};
+
+This guide walks you through integrating Mintly's Bank Account Checker API into a Python backend service. It covers setup, authentication, endpoint interaction, type safety, and error handling best practices.
+
+## Project Setup
+
+**Before you start, create a Mintly account and obtain your API key.**
+
+Now, create your project and install dependencies:
+
+```bash
+python -m venv venv
+source venv/bin/activate
+pip install requests pydantic python-dotenv
+```
+## API Authentication and Configuration
+
+Mintly uses an API key passed via the Authorization header. Create a `.env` file in the root of your project and add your API key. This file should not be committed to version control:
+
+```bash
+MINTLY_API_KEY=your_api_key_here
+MINTLY_BASE_URL=https://api.mintly.uk/bankAccount/v1
+```
+## Environment Configuration
+
+Use `dotenv` to safely loading your environment variables:
+
+```python
+# config.py
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+
+MINTLY_API_KEY = os.getenv("MINTLY_API_KEY")
+MINTLY_BASE_URL = os.getenv("MINTLY_BASE_URL")
+```
+## Typed Response Models with Pydantic
+
+Define your response models based on the OpenAPI spec:
+
+```python
+# models.py
+from pydantic import BaseModel
+from typing import Optional
+
+class PaymentTypes(BaseModel):
+    DirectDebitAccepted: bool
+    DirectCreditAccepted: bool
+    FasterPaymentAccepted: bool
+    # (add other fields if needed)
+
+class BranchInfo(BaseModel):
+    SortCode: str
+    ShortOwningBank: str
+    BranchName: str
+    BicField1: str
+    BicField2: str
+    ShortBranchTitle: str
+    SupervisoryBody: str
+
+class Address(BaseModel):
+    BranchAddressPart1: Optional[str]
+    BranchTown: Optional[str]
+    BranchPostCode1: Optional[str]
+    BranchCountry: Optional[str]
+
+class Branch(BaseModel):
+    Info: BranchInfo
+    Address: Address
+    PaymentTypes: PaymentTypes
+
+class AccountResponse(BaseModel):
+    BranchData: Branch
+    DerivedIban: Optional[str]
+    Status: str
+
+class IdentityResponse(BaseModel):
+    AuthId: str
+    Status: str
+
+class ErrorResponse(BaseModel):
+    Status: str
+    Message: str
+```
+## API Client Setup
+
+Centralise HTTP requests using requests and set your headers:
+
+```python
+# api_client.py
+import requests
+from config import MINTLY_API_KEY, MINTLY_BASE_URL
+
+session = requests.Session()
+session.headers.update({
+    "x-api-key": MINTLY_API_KEY,
+    "Content-Type": "application/json"
+})
+
+def api_get(path: str, params=None):
+    url = f"{MINTLY_BASE_URL}{path}"
+    response = session.get(url, params=params)
+    response.raise_for_status()  # will raise HTTPError for 4xx/5xx
+    return response.json()
+```
+## Service Methods
+
+Create clean service functions wrapping each API endpoint. The code below demonstrates some example methods:
+
+```python
+# mintly_service.py
+from api_client import api_get
+from models import AccountResponse, IdentityResponse
+
+def get_sort_code_details(sort_code: str) -> AccountResponse:
+    data = api_get(f"/sortcode/{sort_code}")
+    return AccountResponse(**data)
+
+def get_account_details(sort_code: str, account_number: str) -> AccountResponse:
+    data = api_get(f"/sortcode/{sort_code}/account/{account_number}")
+    return AccountResponse(**data)
+
+def check_identity() -> IdentityResponse:
+    data = api_get("/identity")
+    return IdentityResponse(**data)
+```
+## Error Handling
+
+Use structured exception handling for catching any API errors. You should expand this code to handle specific error cases as needed, like `429` responses:
+
+```python
+import requests
+
+def safe_get_sort_code_details(sort_code: str):
+    try:
+        result = get_sort_code_details(sort_code)
+        print(result)
+    except requests.HTTPError as http_err:
+        print(f"HTTP error occurred: {http_err.response.status_code} - {http_err.response.text}")
+    except Exception as err:
+        print(f"An unexpected error occurred: {err}")
+```
+## Example Usage
+
+Here's how to use the service in your application:
+
+```python
+# main.py
+from mintly_service import get_account_details
+
+if __name__ == "__main__":
+    try:
+        account_info = get_account_details("424242", "42424242")
+        print(account_info.json(indent=2))
+    except Exception as e:
+        print(f"Error: {e}")
+```
+This article demonstrates how to set up a Python application to interact with the Mintly API. It covers project setup, API authentication, type safety, and error handling. You can extend this example to include additional endpoints and functionality as needed. Happy coding!
+
+If you need further support, please reach out to us at [support@mintly.uk](mailto:support@mintly.uk)

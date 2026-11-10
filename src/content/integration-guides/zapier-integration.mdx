@@ -1,0 +1,46 @@
+export const metadata = {
+  "heading": "Using Mintly Bank Validation APIs with Zapier",
+  "readTime": "3 mins",
+  "related": [
+    {
+      "title": "Connecting Salesforce to the Mintly API",
+      "href": "/integration-guides/salesforce-integration"
+    },
+    {
+      "title": "Integration Guides: Connect Mintly with anything",
+      "href": "/integration-guides"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2025-04-29",
+  "modified": "2025-04-29"
+};
+
+Zapier, a leading automation platform, allows users to connect various applications and automate workflows without writing code. In this technical article, we'll explain how to connect Zapier to the Mintly API without using any code.
+
+Zapier provides a seamless way to connect any system to the Mintly API. Zapier has connectors for many popular applications, including Salesforce, HubSpot, and Google Sheets. This allows you to automate tasks and workflows. Here's how to set up the integration using Zapier:
+
+## Integrating Mintly Bank Account Checker API using Zapier
+
+**Before you start, please [contact us](mailto:support@mintly.uk) so that we can invite you to our private Zapier app.**
+
+1.  **Create a Zap:**
+    -   Log in to your Zapier account and click on the "Create" button.
+    -   Choose a trigger app and select the trigger event that will initiate the integration. For example, you can use Salesforce as the trigger app. The trigger app will be able to extract the fields you want to send to the Mintly API. For example, Mintly needs a sort code and account number to check a UK bank account.
+2.  **Set up the Action Step:**
+    -   Add the Mintly app and select the "Validate" event for the type of validation you require (e.g. Validate Account).
+    -   Click Continue and enter your Mintly account credentials.
+    -   Configure the step by clicking the event fields and assign a value from the trigger app.
+3.  **Set up another Action Step:**
+    -   You can add additional apps if you need to return the validation result to your system.
+    -   For example, you could choose to update a record in Salesforce.
+    -   Configure the step by clicking the fields to update and assign a value from the Mintly action result.
+4.  **Test and Activate the Zap:**
+    -   Test the integration to ensure that data from the trigger app is successfully sent to the Mintly API.
+    -   Once the test is successful, activate the Zap to start the integration process.
+    -   You can start using your integration!
+
+<Image src="/assets/img/theme/checking-number.png" alt="Lady using Mintly to check a sort code and account" width={400} height={1000} />

@@ -1,0 +1,75 @@
+export const metadata = {
+  "heading": "What Is the EISCD Data File - and Why Do Finance Teams Need It?",
+  "readTime": "4 mins",
+  "published": "2026-05-23",
+  "modified": "2026-09-09",
+  "related": [
+    {
+      "title": "What is a sort code and why should I check it?",
+      "href": "/articles/sortcodes"
+    },
+    {
+      "title": "What is modulus checking and why should I do it?",
+      "href": "/articles/modulus-checking"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ]
+};
+
+The Extended Industry Sort Code Directory is the register of every UK bank branch and what it can do. It is maintained by Pay.UK and VocaLink, it is what banks themselves route against, and it is the reason a payment sent to "20-00-00" ends up somewhere specific rather than nowhere.
+
+The "Extended" part is the interesting bit. The original Industry Sort Code Directory was essentially a list of branches. The extended version adds each branch's membership of the payment schemes - Bacs, CHAPS, Faster Payments, Direct Debit - which is what turns it from a directory into something you can make routing decisions with.
+
+## What is actually in the file
+
+Each record covers one sort code and carries the owning bank, the branch title and address, and a set of per-scheme entries describing what that branch supports and how it settles. Two things in there are worth knowing about, because they are the fields people tend not to realise they have:
+
+**Future-dated changes.** When a branch is closing or transferring, the directory says so before it happens rather than after. If you ingest the file weekly you can see a sort code in your customer base going out of service ahead of the date and contact those customers on your own schedule, rather than finding out through a rejected collection.
+
+**Redirection information.** Where a sort code has been closed and its accounts moved, the directory records where payments should now go. That is how you clean up historic records instead of merely flagging them as broken.
+
+<Image src="/assets/img/theme/person_writing.jpg" alt="Automating bank account and sort code checks" width={400} height={1000} />
+
+## Who ends up needing the file
+
+Broadly, anyone whose systems have to make a decision about a sort code without a human present.
+
+Payroll and accounts teams check supplier and employee details before a Bacs run, because a sort code that fails on day three of the cycle is a considerably more expensive problem than one caught before submission. Data teams use it to clean existing records - a customer database of any age accumulates sort codes belonging to branches that closed years ago, and the directory is the only thing that will tell you which ones. Risk and onboarding teams use it as a first filter on details supplied during sign-up.
+
+The common thread is volume. Below a certain number of checks, a lookup tool is fine. Above it, you want the data where your own systems can reach it.
+
+## What the directory can and cannot tell you
+
+The EISCD answers questions about branches: does this sort code exist, who owns it, is it still in service, and which payment schemes does it support. That last one prevents a specific and common failure - setting up a Direct Debit against a branch that does not accept them, and discovering it when the mandate is rejected.
+
+It does not answer questions about accounts. Whether a particular account number is well formed is [modulus checking](/articles/modulus-checking), a separate set of rules published alongside the directory. Whether the account is open, or belongs to the person who gave you the details, is not something any external dataset can tell you. The three checks stack; none of them substitutes for another.
+
+## What you get from Mintly
+
+We are an authorised distributor, so the file we supply is the EISCD - the same dataset VocaLink publishes, not a derived or summarised version of it. Each record carries the sort code, the owning bank and branch title, the branch address, and the payment scheme flags for Bacs, CHAPS, Faster Payments and Direct Debit. You can have it as CSV, tab-separated text, XML or XLSX, so it goes straight into Excel, a SQL table or an ERP import without anyone writing a parser.
+
+The part that is ours rather than the scheme's is the delta file. Alongside each weekly full file we publish just what changed since the last one - new sort codes, closures, scheme membership changes. For most teams that is the difference between a weekly job that reloads the entire directory and one that applies a handful of updates - which matters rather a lot if the data sits behind a live system.
+
+## EISCD Data File vs. Bank Account Checker API
+
+Mintly offers the EISCD in two formats depending on how your team works:
+
+|   | Mintly EISCD Data File | Mintly Bank Account Checker API |
+| --- | --- | --- |
+| **Best for** | Batch validation, offline use, internal tools | Real-time validation, customer-facing workflows |
+| **How it works** | Download and integrate into your systems | API call per validation, live data |
+| **Updates** | Weekly updates (full file or just changes) | Always current |
+| **Setup** | Import into your own database / ERP system | Developer integration with API |
+
+If your team runs scheduled payment runs or needs to validate data in bulk, the EISCD data file is the straightforward, no-code solution. If you need to validate bank details in real time - for example, during customer onboarding - the API may be more appropriate.
+
+## Getting hold of it
+
+The file is delivered through our API, so once it is set up the weekly refresh can run unattended. Licensing is the part worth a conversation rather than a checkout page - what it costs depends on how many sites and systems will use the data, and we would rather scope that properly than have you buy the wrong thing.
+
+[Email the team](mailto:support@mintly.uk) with a rough description of what you are building and we will tell you which option fits. If it turns out that real-time lookups suit you better than holding the data yourself, the [Bank Account Checker API](/features) is the other route, and our guide to [high-volume bank account validation](/articles/high-volume-bank-account-validation-api) covers when each makes sense.
+
+## Frequently Asked Questions

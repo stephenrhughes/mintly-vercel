@@ -1,0 +1,131 @@
+export const metadata = {
+  "heading": "Bank Account and Sort Code Validation API: Release Notes",
+  "published": "2022-10-05",
+  "modified": "2026-06-30"
+};
+
+<ReferenceData />
+
+## V1.2.1 - February 2026 (latest)
+
+Patch update to add new fields for branch information
+
+-   Added `BranchMinorLocation` and `BranchMajorLocation` fields to give improved data on actual branch location.
+
+## V1.2.0 - October 2025
+
+Minor version to add new fields to API responses
+
+-   Added new payment type for Automated Direct Debit Instruction Service (AUDDIS) for UK banks, so that it's distinguishable from paper Direct Debit Instructions. This field is also shown in the web tools.
+-   New field for `ModulusCheckCompleted` to indicate when we are/are not able to run the modulus check on a sort code and account. Included in API response for UK banks accounts and UK IBAN.
+-   New fields added to Branch schema to identify when a branch no longer accepts BACS, CHAPS, ICS, Faster Payments or SEPA payments. Where a redirection is in place we provide the new sort code and whether the account numbers are transferrable.
+-   OpenAPI specification updated with required fields for response schemas.
+
+## V1.1.2 - July 2024
+
+Patch release to update SWIFT API endpoint
+
+-   Add intelligent fallback for BIC that cannot be found, but the main branch does exist.
+-   Updated documentation to SWIFT endpoint to include coverage and fallback.
+
+## V1.1.1 - June 2024
+
+Patch release to update '00' sort codes and apply bug fixes.
+
+-   New allocation for '00' sort codes.
+-   Fix issue with IBAN national check digit validation for Spain.
+
+## V1.1.0 - May 2024
+
+Added sandbox environment for API testing and development. Extended our [Swagger/Open API documentation](/docs) to include error message schema and sandbox server.
+
+-   All endpoints now return appropriate Status property in the return object.
+-   Sandbox environment added for API to aid in development and testing of integrations.
+-   Documentation update: Responses for 400 and 404 status codes updated with JSON schema. Additional details for sandbox environment added, including valid sandbox data.
+-   All API response properties updated to be consistent case.
+
+## V1.0.5 - February 2024
+
+A minor version release to add a 'Status' property to the API response object
+
+-   Status field from the API provided with every response, can be Valid, Invalid or Error.
+
+## V1.0.4 - December 2023
+
+A minor version release to fix parameter validation
+
+-   Bug fixed: non-numeric input data now provides a 400 response from the API.
+
+## V1.0.3 - November 2023
+
+A minor version release, adding new functionality for SEPA Support in Germany
+
+-   We now ingest bank branch data for Germany, allowing us to validate German bank branches and supply related data.
+-   IBAN validation API will return new payment types for SepaMember and SepaDirectDebit for Germany.
+
+## V1.0.2 - July 2023
+
+A minor release including bug fixes and customer requests, including new features:
+
+-   Additional checks for IBAN, that include national check digit validation for the following countries:
+
+-   Albania
+-   Belgium
+-   Bosnia and Herzegovina
+-   Croatia
+-   Czechia
+-   East Timor
+-   Estonia
+-   Finland
+-   France
+-   Hungary
+-   Iceland
+-   Italy
+-   Mauritania
+-   Monaco
+-   Montenegro
+-   North Macedonia
+-   Norway
+-   Poland
+-   Portugal
+-   San Marino
+-   Serbia
+-   Slovakia
+-   Slovenia
+-   Spain
+-   Tunisia
+
+## V1.0.1 - April 2023
+
+Initial release, including sort code and account validation algorithms for UK and Ireland.
+
+-   Sort code and account number validation.
+-   IBAN validation for all participating IBAN countries.
+-   Address lookup for all UK and Ireland banks.
+
+-   National Westminster Bank
+-   Clydesdale Bank
+-   Nationwide Building Society
+-   The Co-operative Bank
+-   Citibank
+-   Halifax
+-   Santander UK
+-   Bank of England
+-   Bank of Scotland
+-   Barclays Bank
+-   The Royal Bank of Scotland
+-   Lloyds Bank
+-   TSB
+-   HSBC Bank
+-   Reliance Bank Limited
+-   Atom Bank
+-   Gibraltar International Bank
+-   Fidor Bank UK
+-   Starling Bank
+-   Monzo
+-   Bank of Ireland
+-   Northern Bank
+-   Allied Irish Banks (UK)
+-   Ulster Bank
+
+-   Payment scheme participation for all UK and Ireland banks.

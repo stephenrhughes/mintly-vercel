@@ -1,0 +1,271 @@
+export const metadata = {
+  "heading": "Using Mintly Bank Validation APIs with C#",
+  "readTime": "12 mins",
+  "related": [
+    {
+      "title": "Connecting to the Mintly API with Node.js",
+      "href": "/integration-guides/nodejs-integration"
+    },
+    {
+      "title": "Connecting to the Mintly API with Python",
+      "href": "/integration-guides/python-integration"
+    },
+    {
+      "title": "Integration Guides: Connect Mintly with anything",
+      "href": "/integration-guides"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2026-06-02",
+  "modified": "2026-06-02"
+};
+
+This guide walks you through integrating Mintly's Bank Account Checker API into a C# .NET application. It covers project setup, authentication, typed models, service encapsulation, and error handling best practices using `HttpClient` and `System.Text.Json`.
+
+## Project Setup
+
+**Before you start, create a Mintly account and obtain your API key.**
+
+Create a new .NET console or class library project and add the required NuGet packages:
+
+```bash
+dotnet new console -n MintlyIntegration
+cd MintlyIntegration
+dotnet add package Microsoft.Extensions.Http
+dotnet add package Microsoft.Extensions.Configuration.Json
+```
+## API Authentication and Configuration
+
+Mintly authenticates requests using an API key passed in the `x-api-key` header. Store your key in `appsettings.json` and keep it out of version control by adding it to `.gitignore`:
+
+```json
+{
+  "Mintly": {
+    "ApiKey": "your_api_key_here",
+    "BaseUrl": "https://api.mintly.uk/bankAccount/v1"
+  }
+}
+```
+Create a strongly-typed options class to bind the configuration:
+
+```csharp
+// MintlyOptions.cs
+public class MintlyOptions
+{
+    public string ApiKey { get; set; } = string.Empty;
+    public string BaseUrl { get; set; } = string.Empty;
+}
+```
+## Typed Models
+
+Define C# records that mirror the API response schema. The `JsonPropertyName` attribute maps PascalCase JSON fields to .NET conventions:
+
+```csharp
+// Models.cs
+using System.Text.Json.Serialization;
+
+public record AccountResponse(
+    [property: JsonPropertyName("Status")] string Status,
+    [property: JsonPropertyName("DerivedIban")] string? DerivedIban,
+    [property: JsonPropertyName("ModulusCheckCompleted")] bool? ModulusCheckCompleted,
+    [property: JsonPropertyName("BranchData")] Branch? BranchData,
+    [property: JsonPropertyName("Message")] string? Message
+);
+
+public record Branch(
+    [property: JsonPropertyName("Info")] BranchInfo Info,
+    [property: JsonPropertyName("Address")] BranchAddress Address,
+    [property: JsonPropertyName("PaymentTypes")] PaymentTypes PaymentTypes,
+    [property: JsonPropertyName("Redirection")] Redirection? Redirection
+);
+
+public record BranchInfo(
+    [property: JsonPropertyName("SortCode")] string? SortCode,
+    [property: JsonPropertyName("ShortOwningBank")] string ShortOwningBank,
+    [property: JsonPropertyName("BranchName")] string? BranchName,
+    [property: JsonPropertyName("BicField1")] string BicField1,
+    [property: JsonPropertyName("BicField2")] string? BicField2,
+    [property: JsonPropertyName("ShortBranchTitle")] string? ShortBranchTitle,
+    [property: JsonPropertyName("SupervisoryBody")] string? SupervisoryBody
+);
+
+public record BranchAddress(
+    [property: JsonPropertyName("BranchAddressPart1")] string BranchAddressPart1,
+    [property: JsonPropertyName("BranchAddressPart2")] string? BranchAddressPart2,
+    [property: JsonPropertyName("BranchTown")] string BranchTown,
+    [property: JsonPropertyName("BranchPostCode1")] string BranchPostCode1,
+    [property: JsonPropertyName("BranchPostCode2")] string? BranchPostCode2,
+    [property: JsonPropertyName("BranchCountry")] string BranchCountry
+);
+
+public record PaymentTypes(
+    [property: JsonPropertyName("DirectDebitAccepted")] bool DirectDebitAccepted,
+    [property: JsonPropertyName("DirectCreditAccepted")] bool DirectCreditAccepted,
+    [property: JsonPropertyName("FasterPaymentAccepted")] bool FasterPaymentAccepted,
+    [property: JsonPropertyName("ChapsAccepted")] bool ChapsAccepted,
+    [property: JsonPropertyName("BacsAccepted")] bool BacsAccepted,
+    [property: JsonPropertyName("SepaMember")] bool SepaMember
+);
+
+public record Redirection(
+    [property: JsonPropertyName("BacsRedirectionToSortCode")] string? BacsRedirectionToSortCode,
+    [property: JsonPropertyName("FasterPaymentsRedirectToSortCode")] string? FasterPaymentsRedirectToSortCode
+);
+
+public record IdentityResponse(
+    [property: JsonPropertyName("AuthId")] string AuthId,
+    [property: JsonPropertyName("Status")] string Status
+);
+```
+## MintlyClient Service
+
+Encapsulate all API calls in a typed client. Using `IHttpClientFactory` (via dependency injection) ensures connections are properly pooled and the `x-api-key` header is attached to every request:
+
+```csharp
+// MintlyClient.cs
+using System.Net.Http.Json;
+using System.Text.Json;
+
+public class MintlyClient
+{
+    private readonly HttpClient _http;
+    private static readonly JsonSerializerOptions JsonOptions = new()
+    {
+        PropertyNameCaseInsensitive = true,
+    };
+
+    public MintlyClient(HttpClient http)
+    {
+        _http = http;
+    }
+
+    public async Task<AccountResponse> GetSortCodeAsync(string sortCode, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync($"/sortcode/{Uri.EscapeDataString(sortCode)}", ct);
+        return await ReadResponseAsync(response, ct);
+    }
+
+    public async Task<AccountResponse> GetAccountAsync(string sortCode, string accountNumber, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync(
+            $"/sortcode/{Uri.EscapeDataString(sortCode)}/account/{Uri.EscapeDataString(accountNumber)}", ct);
+        return await ReadResponseAsync(response, ct);
+    }
+
+    public async Task<AccountResponse> GetSwiftAsync(string bic, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync($"/swift/{Uri.EscapeDataString(bic)}", ct);
+        return await ReadResponseAsync(response, ct);
+    }
+
+    public async Task<AccountResponse> GetIbanAsync(string iban, CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync($"/iban/{Uri.EscapeDataString(iban)}", ct);
+        return await ReadResponseAsync(response, ct);
+    }
+
+    public async Task<IdentityResponse> GetIdentityAsync(CancellationToken ct = default)
+    {
+        var response = await _http.GetAsync("/identity", ct);
+        response.EnsureSuccessStatusCode();
+        return (await response.Content.ReadFromJsonAsync<IdentityResponse>(JsonOptions, ct))!;
+    }
+
+    private static async Task<AccountResponse> ReadResponseAsync(HttpResponseMessage response, CancellationToken ct)
+    {
+        var result = await response.Content.ReadFromJsonAsync<AccountResponse>(JsonOptions, ct);
+        return result!;
+    }
+}
+```
+## Dependency Injection Setup
+
+Register `MintlyClient` with the .NET DI container. The `AddHttpClient` overload configures the base address and default headers once, so individual calls stay clean:
+
+```csharp
+// Program.cs
+using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
+
+var host = Host.CreateDefaultBuilder(args)
+    .ConfigureServices((ctx, services) =>
+    {
+        var mintlyOpts = ctx.Configuration.GetSection("Mintly").Get<MintlyOptions>()!;
+
+        services.AddHttpClient<MintlyClient>(client =>
+        {
+            client.BaseAddress = new Uri(mintlyOpts.BaseUrl);
+            client.DefaultRequestHeaders.Add("x-api-key", mintlyOpts.ApiKey);
+        });
+    })
+    .Build();
+
+var client = host.Services.GetRequiredService<MintlyClient>();
+```
+## Error Handling
+
+The API returns a consistent JSON body for all error responses. Check `Status` on the response object and handle HTTP-level errors (such as `429 Too Many Requests`) by inspecting the status code before deserialising:
+
+```csharp
+// ErrorHandlingExample.cs
+public async Task<AccountResponse?> SafeGetAccountAsync(
+    MintlyClient client, string sortCode, string accountNumber)
+{
+    try
+    {
+        var result = await client.GetAccountAsync(sortCode, accountNumber);
+
+        if (result.Status == "Error")
+        {
+            Console.Error.WriteLine($"Mintly API error: {result.Message}");
+            return null;
+        }
+
+        return result;
+    }
+    catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.TooManyRequests)
+    {
+        Console.Error.WriteLine("Rate limit exceeded. Retry after a short delay.");
+        throw;
+    }
+    catch (HttpRequestException ex) when (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+    {
+        Console.Error.WriteLine("Invalid or missing API key.");
+        throw;
+    }
+    catch (Exception ex)
+    {
+        Console.Error.WriteLine($"Unexpected error: {ex.Message}");
+        throw;
+    }
+}
+```
+## Example Usage
+
+Here's a complete example that validates a sort code and account number using the sandbox:
+
+```csharp
+// Use the sandbox base URL during development:
+// https://sandbox.mintly.uk/bankAccount/v1
+
+var account = await client.GetAccountAsync("424242", "42424242");
+
+if (account.Status == "Valid")
+{
+    Console.WriteLine($"Bank: {account.BranchData?.Info.ShortOwningBank}");
+    Console.WriteLine($"Derived IBAN: {account.DerivedIban}");
+    Console.WriteLine($"Faster Payments: {account.BranchData?.PaymentTypes.FasterPaymentAccepted}");
+    Console.WriteLine($"Modulus check passed: {account.ModulusCheckCompleted}");
+}
+else
+{
+    Console.WriteLine($"Account status: {account.Status}");
+}
+```
+This guide shows how to integrate the Mintly API into a C# .NET application using idiomatic patterns: typed models, dependency-injected `HttpClient`, and structured error handling. You can extend the `MintlyClient` class with retry policies using [Polly](https://github.com/App-vNext/Polly) for production resilience. Happy coding!
+
+If you need further support, please reach out to us at [support@mintly.uk](mailto:support@mintly.uk)

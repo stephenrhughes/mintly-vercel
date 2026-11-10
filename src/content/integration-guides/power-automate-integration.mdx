@@ -1,0 +1,88 @@
+export const metadata = {
+  "heading": "How to Use Microsoft Power Automate to Connect to the Mintly API",
+  "readTime": "5 mins",
+  "related": [
+    {
+      "title": "Using Zapier with Mintly Bank Account Validation tools",
+      "href": "/integration-guides/zapier-integration"
+    },
+    {
+      "title": "How do I check a bank account and sort code are valid?",
+      "href": "/sort-code-checker"
+    },
+    {
+      "title": "Integration Guides: Connect Mintly with anything",
+      "href": "/integration-guides"
+    }
+  ],
+  "published": "2024-07-08",
+  "modified": "2024-09-02"
+};
+
+Microsoft Power Automate is a versatile tool that allows users to automate workflows between applications and services. By connecting to APIs like Mintly, you can automate tasks and integrate functionalities from different platforms. In this article, we will guide you through the process of connecting to the Mintly API using Microsoft Power Automate.
+
+## Step 1: Understanding the Mintly API
+
+Before you begin, it's crucial to understand what the Mintly API offers. The Mintly API allows you to check whether sort codes, bank account numbers and IBAN are valid and provide bank branch information for valid accounts. Since it uses API Key authorization and offers GET endpoints, you will primarily be fetching data. Make sure you have the [API documentation](/docs) handy for details on endpoints and required parameters.
+
+## Step 2: Setting Up Power Automate
+
+1.  **Sign in to Power Automate:** Go to Power Automate and sign in with your Microsoft account.
+2.  **Create a new Flow:**
+    -   Click on “Create” from the left-hand side menu.
+    -   Choose the type of flow you want to create. For this example, we'll create an “Automated flow” which triggers on a specific event.
+
+## Step 3: Adding a Trigger
+
+1.  **Select a Trigger:** Depending on your use case, select a trigger that will initiate the flow. For example, you can choose a trigger like “When a new response is submitted” if you want the flow to start upon receiving a response in Microsoft Forms.
+2.  **Configure the Trigger:** Provide the necessary details for the trigger. If you chose “When a new response is submitted,” you will need to select the Form Id.
+3.  **Get the response details:** If you're using a Microsoft Forms trigger, you'll need to add an Action step to “Get response details”. For more details on using Forms with Power Automate, [see this article](https://support.microsoft.com/en-gb/office/create-an-automated-workflow-for-microsoft-forms-dee28c00-503a-48b3-89df-91a5084e6e43).
+
+## Step 4: Adding an Action to Call Mintly API
+
+1.  **Search for HTTP Action:**
+    -   Click on “New step” and search for “HTTP” in the action search box.
+    -   Select the “HTTP” action from the list.
+2.  **Configure the HTTP Action:**
+    -   **Method:** Select GET since Mintly API only supports GET endpoints.
+    -   **URI:** Enter the API endpoint URL from the Mintly API documentation. For example, if you want to fetch account data, it might look something like
+        
+        ```cs
+        https://api.mintly.uk/bankAccount/v1/sortcode/&#123;sortCode&#125;/account/&#123;accountNumber&#125;
+        ```
+        
+        Note that the parameters in curly braces above will need to be replaced with parameters from your flow, e.g. those collected by your trigger step.
+    -   **Headers:** Add the necessary headers to authorize your request. You will need to include an Authorization header with your API key. Example:
+        
+        ```json
+        X_API_KEY: YOUR_API_KEY
+        ```
+        
+
+## Step 5: Testing the Flow
+
+1.  **Save and Test:**
+    -   Save your flow by clicking on the “Save” button
+    -   Test the flow by triggering the event you specified. If you set up an HTTP request trigger, you can use a tool like Postman to send a test request.
+2.  **Check the results:**
+    -   Once the flow runs, check the results to ensure the API call was successful. You can see the output and any data returned by the Mintly API in the flow’s run history.
+
+## Step 6: Handling Responses and Further Actions
+
+1.  **Parse JSON:**
+    -   Since the Mintly API returns JSON data, you can add a “Parse JSON” action to handle the response.
+    -   Provide the content from the HTTP action's response and specify the schema for the JSON data.
+2.  **Add Additional Actions:**
+    -   Based on the API response, you might want to add further actions. For instance, you can update a database, send an email, or create a record in another application.
+
+## Conclusion
+
+By following these steps, you can successfully connect Microsoft Power Automate to the Mintly API. This integration allows you to automate tasks and workflows involving financial data, making your processes more efficient and streamlined. Remember to refer to the [Mintly API documentation](/docs) for specific details on endpoints and required parameters.
+
+## Additional Tips
+
+-   **Error Handling:** Implement error handling in your flow to manage API call failures gracefully.
+-   **Security:** Ensure your API keys and tokens are stored securely and not hard-coded in the flow.
+-   **Documentation:** Keep your flow documented for future reference and maintenance.
+
+With these steps and tips, you should be well-equipped to integrate Mintly API with Microsoft Power Automate effectively.

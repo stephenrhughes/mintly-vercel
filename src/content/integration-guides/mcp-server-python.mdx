@@ -1,0 +1,177 @@
+export const metadata = {
+  "heading": "Create an MCP Server to use Mintly Bank Validation APIs with LLMs and AI Chatbots",
+  "readTime": "12 mins",
+  "related": [
+    {
+      "title": "Connecting to the Mintly API with Python",
+      "href": "/integration-guides/python-integration"
+    },
+    {
+      "title": "Integration Guides: Connect Mintly with anything",
+      "href": "/integration-guides"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2025-06-10",
+  "modified": "2025-06-10"
+};
+
+This guide will help you build a lightweight Model Context Protocol (MCP) server locally within your organisation. The MCP server acts as a bridge between AI tools (like LLM chatbots) and the Mintly service, allowing non-technical users to query bank account data via AI, safely and securely.
+
+## What You'll Build
+
+-   An MCP server exposing AI-friendly functions
+-   A proxy to securely relay requests to Mintly's API
+-   API Key is stored locally in an environment variable
+-   Can be run locally and connected to Claude Desktop
+
+If you need more information on MCP, there are excellent articles and documentation on the [MCP website.](https://modelcontextprotocol.io/introduction)
+
+## Project Setup
+
+**Before you start, create a Mintly account and obtain your API key.**
+
+You'll also need the following installed:
+
+-   Python 3.9+
+-   `uv` [installed for your OS](https://docs.astral.sh/uv/getting-started/installation/)
+-   Claude Desktop for testing
+
+## Step 1: Install Required Packages
+
+```bash
+# Initialize a new MCP project
+uv init mcp-mintly
+cd mcp-mintly
+
+# Install dependencies
+uv add "mcp[cli]" httpx fastapi dotenv pydantic
+
+# Create main.py and .env files
+touch main.py .env
+                  
+```
+## Step 2: Configure API Details
+
+Add URL and API key to `.env` file:
+
+```bash
+API_BASE_URL=https://api.mintly.uk/bankAccount/v1
+MINTLY_API_KEY=your_api_key_here
+                
+```
+## Step 3: MCP Server Code
+
+We'll keep the code simple and focused on a single endpoint to check account numbers and sort codes. Update `main.py` with the following code:
+
+```python
+from mcp.server.fastmcp import FastMCP
+from pydantic import BaseModel
+import httpx
+from fastapi import HTTPException
+from dotenv import dotenv_values
+
+config = dotenv_values(".env")
+
+mcp = FastMCP("mintly")
+
+class CheckAccountRequest(BaseModel):
+    accountNumber: str
+    sortCode: str
+
+@mcp.tool()
+async def check_account_is_valid(payload: CheckAccountRequest):
+    url = f"{config.get('API_BASE_URL')}/sortcode/{payload.sortCode}/account/{payload.accountNumber}"
+    headers = {
+        "x-api-key": config.get("MINTLY_API_KEY"),
+        "Content-Type": "application/json"
+    }
+
+    async with httpx.AsyncClient() as client:
+        try:
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+        except httpx.HTTPStatusError as e:
+            # Handle specific HTTP errors based on status code
+            if e.response.status_code == 404:
+                return {
+                    "sortCode": payload.sortCode,
+                    "accountNumber": payload.accountNumber,
+                    "accountInfo": e.response.json()
+                }
+            elif e.response.status_code == 400:
+                raise HTTPException(status_code=400, detail=f"Invalid request data: {e.response.json().get('Message', 'Unknown error')}")
+            elif e.response.status_code == 429:
+                raise HTTPException(status_code=429, detail="Rate limit exceeded. Please try again later.")
+            else:
+                raise HTTPException(status_code=500, detail=str(e))
+        except Exception as e:
+            raise HTTPException(status_code=500, detail=f"Unexpected error: {str(e)}")
+
+    return {
+        "sortCode": payload.sortCode,
+        "accountNumber": payload.accountNumber,
+        "accountInfo": response.json()
+    }
+
+if __name__ == "__main__":
+    # Initialize and run the server
+    mcp.run(transport='stdio')
+                  
+```
+## Step 4: Run the Server
+
+To run locally:
+
+```bash
+uv run main.py
+```
+You're server is now running!
+
+## Step 5: Test the MCP Server with Claude Desktop
+
+Your MCP server is now set up and ready to use. If you use Claude desktop, you can add the MCP server to your settings:
+
+```json
+{
+  "mcpServers": {
+    "mintlyBankAccountChecker": {
+      "command": "uv",
+      "args": [
+        "--directory",
+        "C:\ABSOLUTE\DIRECTORY\LOCATION\mcp-mintly",
+        "run",
+        "main.py"
+      ],
+      "description": "Mintly Bank Account Checker"
+    }
+  }
+}
+              
+```
+Next, relaunch Claude desktop and check that the tools are enabled, then ask a question like:
+
+-   Is the bank account with sort code 123456 and account number 12345678 valid, and which payment types does it support?
+-   Can I send a Direct Debit Instruction to the bank with sort code 123456?
+
+Claude will prompt you for permission to use the Mintly MCP integration, and then return the results.
+
+## Notes on Security
+
+-   Your API key is stored locally in the `.env` file. Do **not** expose this key externally.
+-   You can restrict the MCP server to an internal-only network or localhost.
+
+## Next Steps
+
+To enhance this simple MCP Server, you can add enhancements like:
+
+-   Additional functions for checking IBAN, SWIFT or sort codes.
+-   Deploy the server within your organisation so that others can access it.
+-   Add logging and monitoring.
+
+This article demonstrates how to set up a local MCP Server application using Python to interact with the Mintly API, and configure Claude desktop to use it. It covers project setup, API authentication, and error handling. You can extend this example to include additional endpoints and functionality as needed. Happy coding!
+
+If you need further support, please reach out to us at [support@mintly.uk](mailto:support@mintly.uk)

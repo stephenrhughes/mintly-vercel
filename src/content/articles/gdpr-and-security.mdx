@@ -1,0 +1,95 @@
+export const metadata = {
+  "heading": "Bank Details and UK GDPR: What You Actually Have to Get Right",
+  "readTime": "5 mins",
+  "related": [
+    {
+      "title": "What is a sort code and why should I check it?",
+      "href": "/articles/sortcodes"
+    },
+    {
+      "title": "Bank validation APIs: how they work",
+      "href": "/articles/bank-validation-api"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2023-07-05",
+  "modified": "2026-09-09"
+};
+
+If your firm collects client or customer bank details, you are processing personal data and UK GDPR applies. That much is uncontroversial. What is less well understood is exactly which obligations bite, and a fair amount of what gets written on the subject is either vague or quietly wrong.
+
+So here is the practical version, aimed at the firms that handle this data every day - accountants, payroll bureaux, property managers, law firms - rather than at data protection specialists.
+
+## Bank details are not special category data
+
+This is the misconception worth clearing up first, because it sends people down the wrong path. Special category data under Article 9 means health, biometrics, race, religion, political opinions, sex life, trade union membership. Financial information is not on that list. Neither is a sort code and account number.
+
+The practical consequence is that you do not need explicit consent to process bank details, and building your process around consent is usually a mistake - because consent can be withdrawn, and you cannot exactly un-pay someone.
+
+<Image src="/assets/img/theme/security.jpg" alt="Security theme for checking account number and IBAN" width={500} height={1250} />
+
+What you do need is a lawful basis under Article 6. For bank details it is nearly always one of two: performance of a contract, where you are paying someone or collecting from them under an agreement, or legitimate interests, which covers most validation and fraud prevention work. Write down which one you are relying on and why. If you are ever asked, that record is the answer.
+
+## The obligations that actually apply
+
+Four parts of UK GDPR do most of the work where bank details are concerned.
+
+-   **Data minimisation and storage limitation (Article 5).** Hold what you need, for as long as you need it, and no longer. This is the most underused control in the whole regulation. A bank account number you no longer hold cannot be breached. If you are keeping account details for former clients from six years ago because nobody ever wrote a deletion policy, that is a real exposure sitting quietly in your database.
+    
+-   **Security of processing (Article 32).** Encryption in transit and at rest, access controls, and - the bit that gets skipped - a process for regularly testing that any of it works. The standard is appropriate to the risk, not perfect. Bank details sit at the higher end of that scale.
+    
+-   **Processors (Article 28).** The moment you send bank details to a validation provider, a payroll platform or a bureau, they are your processor and you need a written contract with the specific terms Article 28(3) requires. In practice this means asking for their data processing agreement. A provider who cannot produce one on request is telling you something.
+    
+-   **Breach notification (Article 33).** A personal data breach that poses a risk to individuals must be reported to the ICO within 72 hours of you becoming aware of it. Seventy two hours is not long to work out what happened, so the decision-making needs to exist on paper before you need it.
+    
+
+For scale, the upper penalty tier under UK GDPR is £17.5 million or 4% of total worldwide annual turnover, whichever is higher. Most enforcement is nowhere near that, and the ICO's more common outputs are reprimands and enforcement notices. The realistic cost of a bank details breach for a mid-sized firm is usually reputational and operational rather than a headline fine - but it is a genuinely bad month either way.
+
+## Where the risk actually sits
+
+In our experience it is rarely the sophisticated attack. It is the ordinary handling:
+
+-   Bank details arriving by email and sitting in an inbox indefinitely, then in a sent folder, then in a backup.
+    
+-   A spreadsheet of account numbers on a shared drive that everyone in the office can open, because it was easier than setting permissions.
+    
+-   Details pasted into a free online checking tool with no idea what happens to them afterwards.
+    
+-   Former staff who still have access, because offboarding covered the laptop but not the file share.
+    
+
+None of these are exotic. All of them are cheaper to fix than to explain.
+
+## What to ask a validation provider
+
+If you are sending bank details to a third party to be checked, these are the questions worth putting in an email before you sign anything. The answers should be specific:
+
+1.  **Where is the data processed, and where is it stored?** If it leaves the UK you are looking at an international transfer and need the appropriate safeguards in place.
+    
+2.  **Is the account data retained after the check, and for how long?** A validation call does not require the provider to keep the number afterwards. Ask whether they do.
+    
+3.  **Is it used for anything other than answering your query?** Analytics, model training, enrichment products - ask directly.
+    
+4.  **Who are the sub-processors?** You are responsible for your processor's processors. You should be able to see the list.
+    
+5.  **What independent assurance exists?** Cyber Essentials, Cyber Essentials Plus and ISO 27001 all mean something specific and verifiable. "Bank-grade security" means nothing at all.
+    
+
+## Why automating the check usually reduces risk
+
+There is a reasonable instinct that sending data to an API is riskier than checking it yourself. Usually it is the opposite, and the reason is that automation removes the copies.
+
+A manual check means the account number gets exported to a spreadsheet, opened on someone's desktop, pasted into a browser, and left in three places afterwards. An API call sends it over TLS from the system that already holds it and writes the result back to the same record. There is no interim copy, no second tool, and an audit trail of what was checked and when - which is exactly the accountability evidence Article 5(2) asks for anyway.
+
+Mintly is [an API-first service](/articles/bank-validation-api) for precisely this reason. We are Cyber Essentials certified and a Crown Commercial Service G-Cloud supplier, and our data processing agreement is available on request rather than on demand.
+
+## A reasonable place to start
+
+You do not need a compliance programme to make progress on this. Three things, in order: find out where bank details currently live in your organisation (there will be more places than you expect), delete the ones you have no lawful reason to keep, and move the rest into one system with proper access control.
+
+That sequence closes most of the gap, and it does not require anyone's budget approval. If you want to talk through how validation fits into that, [get in touch](/#contact) - we are happy to walk through our own processing arrangements before you send us anything.
+
+This article is general information about how UK GDPR applies to payment data, not legal advice. For your specific obligations, take advice from someone qualified to give it.

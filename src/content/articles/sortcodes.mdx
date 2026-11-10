@@ -1,0 +1,58 @@
+export const metadata = {
+  "heading": "What is a sort code and why should I check it?",
+  "readTime": "3 mins",
+  "related": [
+    {
+      "title": "What is modulus checking and why should I do it?",
+      "href": "/articles/modulus-checking"
+    },
+    {
+      "title": "The EISCD: the UK sort code directory explained",
+      "href": "/articles/eiscd-data-file"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2024-04-05",
+  "modified": "2026-09-09"
+};
+
+A sort code is the six-digit number that identifies which bank and which branch an account sits with. Every bank branch in the UK and the Republic of Ireland has one, and it is half of the pair - sort code plus account number - that any UK payment needs in order to arrive.
+
+New codes get issued when a bank opens a branch or a new bank starts operating; existing ones are retired or reassigned when branches close and banks merge. All of it is recorded centrally in the Extended Industry Sort Code Directory (EISCD), maintained by Pay.UK, the organisation behind the UK's retail payment systems. That directory is why every bank in the country agrees on where a payment should go. Our guide to the [EISCD data file](/articles/eiscd-data-file) covers what is in it.
+
+## Where can I find my sort code?
+
+It is the six-digit number on your bank card, usually written as three pairs - "12-34-56". It is also printed on your statements and shown under Account Details in most banking apps. The hyphens are cosmetic; the sort code is six digits.
+
+<Image src="/assets/img/theme/bank-customer.png" alt="Bank customer using a smartphone to check a sort code" width={1200} height={2000} />
+
+## What the digits mean
+
+The first two digits broadly indicate the bank - 20 for Barclays, 30 for Lloyds, and so on - with the remaining four identifying the branch. Broadly is doing real work in that sentence. Decades of mergers and acquisitions mean a bank often holds several non-contiguous ranges inherited from institutions it bought, so guessing the bank from the first two digits gets you the right answer most of the time and a confidently wrong one the rest. [The published list of ranges](https://en.wikipedia.org/wiki/Sort_code#List_of_sort_codes_of_the_United_Kingdom) is useful context, but it is not a substitute for a lookup.
+
+The other thing worth knowing is that the "branch" attached to a sort code is frequently not a building you could walk into. As banks have centralised, many sort codes now resolve to a processing centre or an administrative address. If you are expecting a high street, you will occasionally be surprised.
+
+## Why check a sort code at all?
+
+Two reasons, and the second is the one people underrate.
+
+The obvious one is existence: an invalid or retired sort code will bounce a payment, and a valid-but-wrong one will send it somewhere unintended. Checking against the directory catches both before the money moves.
+
+The less obvious one is capability. The EISCD records which payment schemes each branch supports, and they are not universal - not every branch accepts Direct Debits, and not every one is connected to Faster Payments. Knowing that before you set up a mandate or promise a customer same-day payment saves a rejection you would otherwise discover days later. To confirm the full account number as well as the sort code, you also want [modulus checking](/articles/modulus-checking).
+
+## Turning a sort code into branch information
+
+Doing this yourself means licensing the EISCD from Pay.UK and building a process to ingest the weekly updates. That is entirely possible, and for a large organisation it can be the right call, but the licence cost is only part of it - the ongoing maintenance tends to be the bit that gets underestimated.
+
+The alternative is to use a service that already does it. We keep our copy of the directory in step with the source and expose it through an API and a web tool, which is a smaller commitment than owning the pipeline. You can try our [free sort code and account checker](/sort-code-checker) on a real sort code and see what comes back.
+
+## When it is worth automating
+
+Checking a handful of accounts by hand is perfectly reasonable and you do not need a subscription for it. The calculation changes when the checks become routine - onboarding, payroll runs, supplier files - because at that point the cost is not the checking, it is the switching between systems and the errors that creep in around the fortieth record.
+
+Our API handles that volume comfortably and returns a result in well under a tenth of a second, so it can sit inside a sign-up form without anyone noticing. If you would rather not write code, Zapier and Power Automate can call it from a workflow you already have. For larger volumes, our guide to [high-volume bank account validation](/articles/high-volume-bank-account-validation-api) goes into the detail.
+
+If you are not sure whether any of this applies to you, we are happy to have a look at what you are dealing with and tell you straight whether we can help.

@@ -1,0 +1,138 @@
+export const metadata = {
+  "heading": "High-Volume UK Bank Account Validation API: Check 50,000+ Accounts a Month",
+  "readTime": "7 mins",
+  "published": "2026-07-16",
+  "modified": "2026-09-09",
+  "faq": [
+    {
+      "question": "Can I validate 50,000 bank accounts a month with the API?",
+      "answer": "<p>Yes. Mintly's bank account validation API is built for high-volume use. Our Enterprise plan is designed for teams checking 50,000 accounts a month or more, with volume pricing from 0.8p per check and no per-request top-ups. Get in touch for a tailored quote.</p>"
+    },
+    {
+      "question": "How fast is the bank account validation API?",
+      "answer": "<p>Mintly returns a validation result in under 50ms on average, so you can validate account details in real time inside sign-up forms, checkout flows and payment runs without adding noticeable latency.</p>"
+    },
+    {
+      "question": "Do you support bulk or batch validation as well as the API?",
+      "answer": "<p>Yes. Alongside the REST API you can upload a CSV of sort codes and account numbers through the secure Mintly portal and download an enriched file with validation results and branch data. This suits scheduled payment runs and one-off data-cleansing projects where a full API integration isn't needed.</p>"
+    },
+    {
+      "question": "Is there a rate limit on the API?",
+      "answer": "<p>Plans include a generous request allowance and the API auto-scales to handle bursts. If you expect sustained high throughput or need a specific concurrency guarantee, our Enterprise plan includes an SLA - talk to us about your peak volumes.</p>"
+    },
+    {
+      "question": "Should we build modulus checking in-house instead?",
+      "answer": "<p>You can, but the modulus checking rules and the underlying sort code data (the EISCD) are maintained by Pay.UK and VocaLink and change regularly. An in-house implementation needs continual updates to stay accurate, plus a licence for the sort code data. A validation API keeps the rules and data current for you, so your team ships once and stays correct.</p>"
+    }
+  ],
+  "related": [
+    {
+      "title": "Why finance teams use bank validation APIs",
+      "href": "/articles/bank-validation-api"
+    },
+    {
+      "title": "What is modulus checking and why should I do it?",
+      "href": "/articles/modulus-checking"
+    },
+    {
+      "title": "Our guide to automated bank account checking",
+      "href": "/articles/automation"
+    }
+  ]
+};
+
+Validation is one of those problems that changes character with volume rather than just getting bigger. At a few hundred checks a month it is a task someone does. At fifty thousand it is infrastructure, and the things that matter become latency, how the failure cases behave, and what happens on the day the provider has an outage.
+
+This guide is written for teams at the second end of that range. It covers what the checks actually do, what separates providers once you are past the feature list, the real cost of building it in-house, and how to get integrated.
+
+## What a bank account validation API actually checks
+
+In the UK, validating bank details programmatically means two complementary checks against authoritative data:
+
+-   **Sort code validation** - confirming the six-digit sort code exists in the [Extended Industry Sort Code Directory (EISCD)](/articles/eiscd-data-file) and returning the bank, branch and the payment schemes it supports (Bacs, CHAPS, Faster Payments, Direct Debit).
+-   **[Modulus checking](/articles/modulus-checking)** \- applying the official mathematical algorithms to confirm that a sort code and account number combination is structurally valid before you ever attempt a payment.
+
+The modulus checking rules and the sort code data behind them are maintained by Pay.UK and VocaLink (a Mastercard company) and are updated regularly. That maintenance burden is one of the strongest arguments for using an API rather than owning the logic yourself - more on that below.
+
+<Image src="/assets/img/theme/checking-number.png" alt="Developer integrating a high-volume bank account validation API" width={400} height={1000} />
+
+## What matters when you're validating at scale
+
+At a few hundred checks a month, almost any tool will do. At 50,000+ a month, a handful of characteristics separate a solution that quietly works from one that becomes a liability:
+
+1.  **Latency.** If you're validating inside a sign-up form or checkout, every millisecond counts. Mintly returns a result in under 50ms on average, so validation is invisible to your users.
+2.  **Predictable, volume-based pricing.** Look for per-check pricing that falls as volume rises, with no setup fees or credit top-ups to manage. Mintly's pricing starts from 0.8p per check, with a dedicated Enterprise tier for teams above 25,000-50,000 checks a month.
+3.  **Authoritative, current data.** Your provider should validate against official sources - the EISCD for sort codes and the Pay.UK/VocaLink modulus rules - and keep them up to date so you don't have to.
+4.  **Both API and bulk options.** Real-time API calls for customer-facing flows, plus bulk CSV upload for scheduled payment runs and data-cleansing.
+5.  **Security and compliance.** Bank details are sensitive personal data under UK GDPR. Choose a provider with recognised credentials - Mintly is Cyber Essentials certified, a Crown Commercial Service G-Cloud supplier, and a VocaLink/Mastercard-authorised distributor of the Extended ISCD.
+
+## Integrating the API
+
+Mintly's Bank Account Checker API is a straightforward REST API. You authenticate with an API key passed in the `x-api-key` header, then make a single GET request per validation. Here's a complete example that validates a sort code and account number:
+
+```bash
+curl https://api.mintly.uk/bankAccount/v1/sortcode/424242/account/42424242 \
+  -H "x-api-key: YOUR_API_KEY"
+```
+A valid combination returns the branch data and status:
+
+```json
+{
+  "BranchData": {
+    "Info": {
+      "SortCode": "424242",
+      "ShortOwningBank": "Example Bank",
+      "BranchName": "London",
+      "ShortBranchTitle": "London",
+      ...
+    },
+    "PaymentTypes": {
+      "DirectDebitAccepted": true,
+      "DirectCreditAccepted": true,
+      "FasterPaymentAccepted": true,
+      ...
+    }
+  },
+  "DerivedIban": "GB00EXAM42424242424242",
+  "Status": "Valid",
+  ...
+}
+```
+Because it's a plain REST call, you can wire it into any stack. We maintain step-by-step integration guides for the most common ones:
+
+-   [Python integration guide](/integration-guides/python-integration)
+-   [C#/.NET integration guide](/integration-guides/csharp-integration)
+-   [Node.js integration guide](/integration-guides/nodejs-integration)
+-   [Salesforce integration guide](/integration-guides/salesforce-integration)
+
+Prefer no-code? You can also connect Mintly through [Zapier](/integration-guides/zapier-integration) or [Power Automate](/integration-guides/power-automate-integration) , or explore the full [API documentation](/docs).
+
+## API vs bulk CSV: pick the right mode for the job
+
+High-volume teams rarely need just one mode. A typical setup uses the API for real-time, customer-facing validation and bulk CSV for scheduled back-office runs:
+
+|   | REST API | Bulk CSV upload |
+| --- | --- | --- |
+| **Best for** | Sign-up, checkout and onboarding flows | Payroll, supplier payment runs, data cleansing |
+| **How it works** | One request per validation, live result | Upload a file, download enriched results |
+| **Integration effort** | Developer integration (guides above) | No code - use the secure portal |
+
+## Build vs buy: the real cost of doing it yourself
+
+Teams with strong engineering functions often ask whether they should just implement modulus checking themselves. It's technically achievable - the algorithms are published - but the total cost of ownership is easy to underestimate:
+
+-   **The data isn't free or static.** Modulus rules and the EISCD are maintained by Pay.UK/VocaLink and change regularly. You'd need to license the sort code data and build a process to ingest updates.
+-   **Correctness is subtle.** There are multiple algorithm types (including double-alternate and exception rules) with per-sort-code weighting tables. Small mistakes lead to false rejections or, worse, false acceptances.
+-   **It's ongoing, not one-off.** Every rule change is a maintenance ticket your team owns forever.
+
+At 50,000 checks a month, a validation API from 0.8p per check costs a fraction of the engineering time needed to build and maintain an equivalent in-house system - and it stays correct automatically. For a fuller treatment, see our guide to [automated bank account checking](/articles/automation) and [why finance teams use bank validation APIs](/articles/bank-validation-api) .
+
+## A note on Confirmation of Payee
+
+Modulus checking answers "is this a structurally valid account?" It does not confirm the account holder's name - that's a separate service called Confirmation of Payee (CoP). Many teams run modulus checking first as a fast, low-cost filter to catch typos and invalid details, then apply name verification through a CoP provider where it's needed. Mintly provides the modulus checking and sort code validation layer; if you also need name matching, we're happy to point you to CoP options.
+
+## Get started
+
+If you're validating tens of thousands of accounts a month, the fastest way to scope the right plan is to tell us your volumes. Our Enterprise tier is built for 50,000+ checks a month with volume pricing and an SLA. You can also start a free trial to test the API against your own data first.
+
+## Frequently Asked Questions

@@ -1,0 +1,67 @@
+export const metadata = {
+  "heading": "Pre-AUDDIS Checks: Validating Direct Debit Details Before They Reach Bacs",
+  "readTime": "4 mins",
+  "related": [
+    {
+      "title": "What is a sort code and why should I check it?",
+      "href": "/articles/sortcodes"
+    },
+    {
+      "title": "What is modulus checking and why should I do it?",
+      "href": "/articles/modulus-checking"
+    },
+    {
+      "title": "What is a bank validation API?",
+      "href": "/articles/bank-validation-api"
+    }
+  ],
+  "published": "2022-10-05",
+  "modified": "2026-09-09"
+};
+
+AUDDIS - the Automated Direct Debit Instruction Service - is the Bacs service that lets you lodge Direct Debit Instructions electronically instead of posting paper mandates to the payer's bank. If you collect by Direct Debit in the UK, you almost certainly use it.
+
+The part that causes trouble is the shape of the feedback loop. You submit a DDI, it goes through the Bacs three-day cycle, and the payer's bank either says nothing (which means it was accepted) or returns a rejection with a reason code. By the time that code lands, you have usually already told the customer their Direct Debit is set up, sent the advance notice, and scheduled a first collection.
+
+So the cost of a rejected DDI is rarely the rejection itself. It is the days that pass before you find out, and everything you did in the meantime on the assumption it had worked.
+
+## Which rejections validation can prevent
+
+This is where it pays to be honest, because not all AUDDIS rejections are preventable and any tool that implies otherwise is overselling. The reason codes split into two groups.
+
+<Image src="/assets/img/theme/checking-number.png" alt="Ensure compliance with AUDDIS by checking account details" width={400} height={1000} />
+
+**Preventable before submission.** These come down to the details themselves being wrong or unsuitable, and a check catches them in milliseconds:
+
+-   **Incorrect payer account details (code L)** - the sort code and account number do not form a valid combination. Almost always a typo or a transposition. [Modulus checking](/articles/modulus-checking) finds these.
+-   **Bank will not accept Direct Debits on this account (code G)** - the branch or account type is not set up for Direct Debit collection. A sort code lookup tells you this before you submit, because the [EISCD](/articles/eiscd-data-file) records which payment schemes each branch supports.
+-   **Invalid account type (code F)** - similar territory: the account exists but is not a category that can carry a Direct Debit.
+
+**Not preventable, and worth knowing that.** Accounts that have been closed, transferred to another bank, or where the payer has cancelled the instruction are all real-world state that no external validation service can see. There is no live directory of UK account status open to third parties. If you are being sold something that claims to check whether an account is open, ask exactly what it queries.
+
+In practice the first group is the large one. Most rejected DDIs are rejected because someone mistyped eight digits, not because a customer closed their account between signing up and the file being processed.
+
+## The paperless requirement
+
+There is a compliance angle as well as an operational one. Under the Direct Debit scheme rules, account details captured through a paperless sign-up - over the phone, or through a web form - have to be modulus checked before the DDI is lodged. That is not optional, and it is the reason many organisations first look at validation at all.
+
+It is also worth remembering that your sponsoring bank sees your rejection rate. A service user whose DDI submissions bounce regularly attracts questions, and those conversations are much easier to have when you can show the checks that run before anything reaches Bacs.
+
+## Where the check belongs in your process
+
+The useful principle is to validate at the point where the customer is still available to correct it. Once they have closed the tab, a wrong account number turns into an email, then a phone call, then a mandate that never gets set up.
+
+A workable pattern for most teams looks like this:
+
+1.  Validate the sort code and account number inside the sign-up form, before the customer submits it.
+2.  Check the sort code accepts Direct Debits at the same time, and say so plainly if it does not - "this account can't be used for Direct Debit" is a much better message than a silent failure two weeks later.
+3.  Re-check the whole file immediately before the AUDDIS submission, because details get edited between capture and lodgement.
+4.  Keep the reason codes you do receive and look at them monthly. A cluster of the same code usually points at something specific in your capture process rather than bad luck.
+
+## How Mintly fits in
+
+Mintly runs both checks in a single call: modulus checking on the sort code and account number, and a lookup against the EISCD for the branch and its supported payment schemes, including whether it accepts Direct Debits.
+
+You can use it three ways depending on how your process works - one at a time through the web tool, as a CSV upload for an existing book of mandates, or [through the API](/articles/automation) so the check runs automatically before every submission. Most organisations start with the CSV to see what is already in their data, then integrate once they know.
+
+If you want to know what your current mandate file looks like before committing to anything, upload a sample during the free trial. It takes a few minutes and the answer is usually informative.
