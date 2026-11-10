@@ -156,6 +156,8 @@ const adminPages = [
   "/admin/organisations",
   "/admin/organisations/00000000-0000-0000-0000-000000000000",
   "/admin/plans",
+  "/admin/admins",
+  "/admin/sso",
 ];
 
 test("the admin pages need a signed-in admin (plan §6.8)", async ({ page }) => {

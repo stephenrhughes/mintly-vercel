@@ -5,6 +5,7 @@ import { adminAction, formText, isUuid } from "@/lib/admin/action";
 import { applyResync, previewResync } from "@/lib/admin/resync-apply";
 import { describeKeyAction } from "@/lib/admin/resync";
 import { resyncDeps } from "@/lib/admin/resync-server";
+import { getStripe } from "@/lib/stripe/client";
 
 // Resync from Stripe (ADM-05, ADM-07): preview, then apply.
 
@@ -26,6 +27,10 @@ export async function previewResyncAction(
   if (!isUuid(orgId) || !validSubscriptionId(subscriptionId)) return { error: "Not found." };
   let preview: ResyncState["preview"];
   const state = await adminAction(`/admin/organisations/${orgId}`, async () => {
+    if (!getStripe())
+      return {
+        error: "Stripe isn't configured on this deployment, so there's nothing to resync from.",
+      };
     const result = await previewResync(resyncDeps(), { orgId, subscriptionId });
     if (!result.ok) return { error: result.error };
     preview = {

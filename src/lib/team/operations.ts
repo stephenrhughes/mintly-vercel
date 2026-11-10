@@ -53,7 +53,18 @@ const expiry = (now: Date) => new Date(now.getTime() + INVITE_EXPIRY_DAYS * 86_4
 /** TEAM-04, TEAM-05, TEAM-07: invite someone, or hold the invite until approval. */
 export async function inviteMember(
   deps: TeamDeps,
-  input: { actor: Actor; org: OrgContext; email: string; role: string },
+  input: {
+    actor: Actor;
+    org: OrgContext;
+    email: string;
+    role: string;
+    /**
+     * The owner's email, whose domain invitees must share. Defaults to the
+     * actor's, who is the owner; an admin inviting for an organisation
+     * passes the owner's (plan §6.8).
+     */
+    ownerEmail?: string | null;
+  },
 ): Promise<TeamResult> {
   const email = input.email.trim().toLowerCase();
   if (!emailSchema.safeParse(email).success) {
@@ -75,7 +86,7 @@ export async function inviteMember(
   if (org.error) throw new Error(`reading the organisation failed: ${org.error.message}`);
 
   const domainProblem = inviteDomainProblem({
-    ownerEmail: input.actor.email,
+    ownerEmail: input.ownerEmail === undefined ? input.actor.email : (input.ownerEmail ?? ""),
     inviteeEmail: email,
     allowExternal: org.data.allow_external_invites,
   });
@@ -151,7 +162,7 @@ async function loadOpenInvite(db: SupabaseClient, orgId: string, inviteId: strin
 /** Sends an invite again with a new link and a fresh 14 days. */
 export async function resendInvite(
   deps: TeamDeps,
-  input: { actor: Actor; org: OrgContext; inviteId: string },
+  input: { actor: Actor; org: OrgContext; inviteId: string; ownerEmail?: string | null },
 ): Promise<TeamResult> {
   const invite = await loadOpenInvite(deps.db, input.org.orgId, input.inviteId);
   if (!invite) return { ok: false, error: "That invite is no longer open." };
@@ -168,6 +179,7 @@ export async function resendInvite(
       org: input.org,
       email: invite.email,
       role: invite.role,
+      ownerEmail: input.ownerEmail,
     });
   }
 
