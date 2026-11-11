@@ -60,3 +60,25 @@ export async function markTrialConverted(email: string) {
 export async function removeFromList(email: string) {
   await call(`/contacts/${encodeURIComponent(email)}`, { method: "DELETE" }, [404]);
 }
+
+/**
+ * LEAD-02: someone asked for the BACS checklist on /links. They go on the
+ * lead list (BREVO_LEAD_LIST_ID, list 9 on the old site) with PDF_STATUS
+ * set, which Brevo's automation uses to send the PDF.
+ */
+export async function addLead(email: string, name: string, env: Env = process.env) {
+  const listId = Number.parseInt(env.BREVO_LEAD_LIST_ID ?? "", 10);
+  await call(
+    "/contacts",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        email,
+        listIds: Number.isInteger(listId) ? [listId] : [],
+        updateEnabled: true,
+        attributes: { PDF_STATUS: "Downloaded", FULLNAME: name },
+      }),
+    },
+    [204],
+  );
+}

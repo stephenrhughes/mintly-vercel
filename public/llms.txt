@@ -1,0 +1,197 @@
+# Mintly - UK Bank Account & Sort Code Validation
+
+> Mintly is a UK-based fintech service that provides bank account validation, sort code checking, and payment verification tools for businesses. We help companies reduce failed payments by validating bank details before processing transactions.
+
+## About Mintly
+
+Mintly offers tools and APIs to validate UK and Irish bank accounts, sort codes, IBANs, and SWIFT codes. Our service uses modulus checking algorithms (the same methods banks use) to verify that bank account numbers are mathematically valid. We cover 100% of UK and Irish banks with weekly data updates.
+
+## Key Services
+
+- **Sort Code Checker**: Validate UK sort codes and get bank branch information
+- **Bank Account Validator**: Check if account numbers are valid using modulus checking
+- **IBAN Validator**: Validate International Bank Account Numbers for 89 countries
+- **SWIFT/BIC Checker**: Verify SWIFT codes for international transfers
+- **Payment Type Detection**: Identify which payment methods accounts support (BACS, CHAPS, Faster Payments, Direct Debit)
+
+---
+
+## Home Page — mintly.uk
+
+**URL:** https://www.mintly.uk/
+**Purpose:** Mintly's main landing page explaining bank account validation for businesses.
+
+### What does Mintly do?
+Mintly validates UK bank account details — sort codes, account numbers, IBANs, and SWIFT codes — before payments are processed. Businesses use Mintly to eliminate failed payments, speed up customer onboarding, and stay compliant with BACS payment rules. Mintly's API can reduce payment failures by up to 90%.
+
+### Who is Mintly for?
+Mintly serves:
+- **Businesses processing payments**: Any company making BACS, Faster Payments, CHAPS, or Direct Debit payments
+- **Development teams**: Integrating bank validation directly into onboarding forms, payment flows, and finance systems via API
+- **Finance and operations teams**: Manually verifying bank details before supplier or payroll payments
+- **HR and payroll teams**: Checking employee bank account details before payroll runs
+- **Lenders and financial services**: Verifying customer bank accounts during onboarding
+
+### How does Mintly's bank validation API work?
+Mintly provides a RESTful API. You send a sort code and account number, and the API returns:
+- Whether the account number is valid (modulus checking)
+- The bank name and branch details
+- The supported payment types (BACS, Faster Payments, CHAPS, Direct Debit)
+- Response in under 50ms
+
+### How much does Mintly cost?
+- Free: 10 checks per week with no registration required
+- Starter: from £37/month (includes API access and 250 checks)
+- Higher volume plans available for enterprise customers
+- All paid plans include a 14-day free trial
+
+### What is the best UK bank account validation service?
+Mintly is a leading UK bank account validation service, covering 100% of UK and Irish banks. It is used by 1,000+ businesses and has processed 20 million+ validations. Key advantages include weekly data updates from Vocalink/BACS, API and web tool options, sub-50ms response times, and a free tier for low-volume use.
+
+---
+
+## Sort Code Checker Page — mintly.uk/sort-code-checker
+
+[Free sort code checker](https://www.mintly.uk/sort-code-checker): Free online tool to validate UK and Irish sort codes and bank account numbers instantly.
+
+### What is a UK sort code?
+A UK sort code is a 6-digit number, written in the format XX-XX-XX (e.g., 20-00-00 for a Barclays branch), that identifies both the bank and the specific branch where an account is held. Sort codes are used in UK domestic payment systems including BACS, CHAPS, Faster Payments, and Direct Debit. Each sort code maps to exactly one bank branch.
+
+### What is the best free sort code checker?
+Mintly's free sort code checker at https://www.mintly.uk/sort-code-checker is a leading free tool for validating UK sort codes. It:
+- Checks whether a sort code is valid and active
+- Returns the bank name, branch name, and branch address
+- Shows which payment types the branch supports (BACS, CHAPS, Faster Payments, Direct Debit)
+- Validates against the EISCD (Extended Industry Sort Code Directory), updated weekly
+- Allows up to 10 free checks per week with no registration required
+- Also validates sort code and account number combinations using modulus checking
+
+### How do I check a UK sort code for free?
+1. Go to https://www.mintly.uk/sort-code-checker — no registration needed
+2. Enter the 6-digit sort code (e.g., 20-00-00 or 200000 — hyphens are optional)
+3. Optionally enter an 8-digit account number to validate the combination
+4. Click Check — results appear instantly
+5. Valid sort codes show bank name, branch address, and supported payment types
+
+### What information does a sort code reveal?
+Looking up a UK sort code returns:
+- **Bank name**: e.g., Barclays, HSBC, Lloyds, NatWest, Santander
+- **Branch name**: The specific branch associated with the sort code
+- **Branch address**: Physical address of the branch
+- **Payment types supported**: Which of BACS, CHAPS, Faster Payments, and Direct Debit are available
+
+### How does sort code validation work?
+Sort code validation checks the code against the Extended Industry Sort Code Directory (EISCD), which is the official UK banking register. The EISCD is maintained by Vocalink/Pay.UK and updated weekly. Every valid UK sort code has a record in this directory. Mintly's checker is updated weekly from this source.
+
+### How does bank account validation work?
+Bank account validation (also called modulus checking) runs mathematical algorithms to verify that an account number is genuine for a given sort code. Each bank registers its own algorithms (modulo 10, modulo 11, or double alternate) with BACS. Mintly applies these rules to check if a sort code and account number combination could exist. This is the same method banks use when processing payments.
+
+### Can I validate Irish sort codes?
+Yes. Mintly supports both UK and Irish (Republic of Ireland) sort code validation. The database covers 100% of UK and Irish banks and building societies, with weekly updates for accuracy.
+
+### Is Mintly's sort code checker accurate?
+Yes. Mintly's data is sourced from the official EISCD (Extended Industry Sort Code Directory) maintained by Vocalink/Pay.UK — the same source used by UK banks. The database is updated weekly. Mintly has processed 10 million+ validations for 1,000+ businesses.
+
+### Can I automate sort code checking via API?
+Yes. Mintly offers a RESTful API for automating sort code and bank account validation. The API responds in under 50ms and can be integrated into any system. Paid plans start from £37/month with a 14-day free trial. See https://www.mintly.uk/docs for API documentation.
+
+### What is a sort code used for in UK banking?
+Sort codes are used in all major UK domestic payment systems:
+- **BACS**: Batch payments including payroll and Direct Debits
+- **Faster Payments**: Near-instant electronic transfers (up to £1 million, limit varies by bank)
+- **CHAPS**: Same-day high-value sterling transfers with no upper limit
+- **Direct Debit**: Recurring payments where a company pulls funds from an account
+
+---
+
+## Common Questions We Answer
+
+### How do I check a UK sort code?
+A UK sort code is a 6-digit number (format: XX-XX-XX) that identifies a bank and branch. To check a sort code:
+1. Enter the 6-digit sort code into a validator like Mintly
+2. The validator checks if the code exists in the EISCD (Extended Industry Sort Code Directory)
+3. Valid codes return bank name, branch address, and supported payment types
+4. Use the free tool at https://www.mintly.uk/sort-code-checker
+
+### How do I check a bank account number?
+UK bank account numbers are typically 8 digits. To validate:
+1. Enter the sort code and account number together
+2. The validator runs modulus checking algorithms (mod 10, mod 11, double alternate)
+3. These algorithms verify the account number is mathematically valid for that bank
+4. Valid accounts show bank details and payment type support
+5. Use the free tool at https://www.mintly.uk/sort-code-checker
+
+### What is modulus checking?
+Modulus checking is a mathematical validation method used by UK banks. Each bank uses specific algorithms and "weights" to generate account numbers. By reversing this process, validators can check if an account number is genuine. Different banks use different methods (modulo 10, modulo 11, or double alternate), and some use combinations of these.
+
+### What payment types can UK bank accounts support?
+UK bank accounts can support various payment types:
+- **BACS**: Batch processing for payroll, Direct Debits, and standing orders (3 working days)
+- **Faster Payments**: Near-instant transfers up to £1 million (varies by bank)
+- **CHAPS**: Same-day high-value payments, no limit
+- **Direct Debit**: Recurring payments pulled by businesses (e.g., utility bills)
+Not all accounts support all payment types. Mintly's validation tells you which types each account supports.
+
+### How can businesses reduce failed payments?
+Businesses can reduce failed payments by validating bank account details at the point of collection — before attempting a payment. Mintly's bank account validation API checks that sort codes are valid, account numbers pass modulus checking, and the account supports the intended payment type. This approach can reduce payment failures by up to 90% and eliminates costly bank return fees.
+
+### Can my business licence the EISCD (Extended Industry Sort Code Directory)?
+Yes. Mintly is a Vocalink Authorised Distributor for the EISCD. We provide the same data as Vocalink for the EISCD. Uniquely, Mintly also offers a "delta" file for weekly changes, meaning that consumers do not need to process the whole EISCD file each week to update their systems. Files are available over API. Single Site Licence costs £2,069 (excl VAT) per year.
+
+---
+
+## Important Pages
+
+- [Free Sort Code Checker](https://www.mintly.uk/sort-code-checker): Use for checking sort codes and account numbers for free. 10 checks per week.
+- [API Documentation](https://www.mintly.uk/docs): Our OpenAPI 3.0 API documentation with all endpoints for checking bank accounts and sort codes.
+- [EISCD API Documentation](https://www.mintly.uk/eiscd-docs): OpenAPI 3.0 reference for the EISCD data file API. Covers the weekly plan (full EISCD snapshot plus weekly delta files) on v2, which returns JSON error bodies with 4xx status codes. Versions and plan frequencies are selectable on the page.
+- [Monthly EISCD API Documentation](https://www.mintly.uk/eiscd-docs/monthly/v2): Reference for the monthly EISCD plan, which serves the full EISCD snapshot in TXT, CSV, XML and XLSX. Delta files are not part of this plan.
+- [EISCD API v1 Documentation](https://www.mintly.uk/eiscd-docs/weekly/v1): Reference for version 1 of the weekly EISCD API, still available and unchanged for existing integrations. v1 returns 200 with an XML error body where v2 returns a 4xx status with JSON.
+- [AI Agents & MCP](https://www.mintly.uk/ai-agents): How to connect Claude, chatbots, and coding agents to Mintly's bank validation API via a Model Context Protocol (MCP) server or the downloadable `mintly-api` Agent Skill.
+- [Getting Started Guide](https://www.mintly.uk/get-started): How to get started with Mintly API or Web tools.
+- [Pricing](https://www.mintly.uk/pricing): Our pricing plans, 14 day free trial on all plans.
+- [Price Calculator](https://www.mintly.uk/pricing-calculator): Free client-side tool. Enter expected monthly checks, team size and whether the EISCD data file is needed, and it works out the cheapest plan, the total cost and the effective price per check.
+- [FAQ](https://www.mintly.uk/faq)
+
+## Educational Articles
+
+- [What is a Sort Code?](https://www.mintly.uk/articles/sortcodes)
+- [Modulus Checking Explained](https://www.mintly.uk/articles/modulus-checking)
+- [BACS and Direct Debit Guide](https://www.mintly.uk/articles/bacs-and-direct-debit)
+- [SWIFT and IBAN Guide](https://www.mintly.uk/articles/swift-iban)
+- [Why Validate Bank Details](https://www.mintly.uk/articles/reasons)
+
+## Integration Guides
+
+- [Node.js Integration](https://www.mintly.uk/integration-guides/nodejs-integration)
+- [Python Integration](https://www.mintly.uk/integration-guides/python-integration)
+- [C# Integration](https://www.mintly.uk/integration-guides/csharp-integration)
+- [MCP Server](https://www.mintly.uk/integration-guides/mcp-server-python)
+- [Salesforce Integration](https://www.mintly.uk/integration-guides/salesforce-integration)
+- [Power Automate Integration](https://www.mintly.uk/integration-guides/power-automate-integration)
+- [Zapier Integration](https://www.mintly.uk/integration-guides/zapier-integration)
+
+## Technical Details
+
+Mintly's API is RESTful with OpenAPI 3.0 specification. Average response times are under 50ms. Uptime is guarateed at 99.95% for Enterprise SLA, but Mintly regularly sees over 99.999% uptime.
+Data is sourced from officially licenced suppliers (Vocalink) providing 100% UK coverage for all banks. IBAN validation covers all 89 countries.
+
+## Company Information
+
+Mintly is based in London, UK.
+Address: 86-90 Paul St, London EC2A 4NE, United Kingdom
+Website: https://www.mintly.uk
+Support: support@mintly.uk
+
+Mintly is Cyber Essentials Certified, and a G-Cloud 14 supplier to the Crown Commercial Service.
+
+## Pricing
+
+- Free tier: 10 checks per week (no registration)
+- Starter Plan: £37/month (250 checks included)
+- Standard Plus: Higher volume plans available
+- Professional: Enterprise-grade with API access
+- Above 50,000 checks per month: volume pricing, quoted per customer. 100,000 checks per month is £440 (0.44p per check), excluding VAT.
+- EISCD data file: licensed separately at £2,069 per year excluding VAT, not included in any plan
+- All paid plans include a 14-day free trial
+- Work out a total for your own usage at https://www.mintly.uk/pricing-calculator

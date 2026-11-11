@@ -1,0 +1,193 @@
+{
+	"info": {
+		"_postman_id": "58f73f9b-6edb-4382-8f2f-2dc6c123564e",
+		"name": "Mintly-API",
+		"description": "## Introduction\n\nThanks for downloading the mintly Postman collection. Here you will find examples of all our API endpoints.\n\n### Getting Started\n\nYou will need to set the `api-key` variable with the API Key from the mintly dashboard. Then you'll have everything you need to run API calls from Postman. \n\nTip: You can use Postman's code tool to generate sample code to call our APIs in loads of coding languages - cool!",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+	},
+	"item": [
+		{
+			"name": "Validate Sort Code & Account",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.mintly.uk/bankAccount/v1/sortcode/{{sort-code}}/account/{{account-number}}",
+					"protocol": "https",
+					"host": [
+						"api",
+						"mintly",
+						"uk"
+					],
+					"path": [
+						"bankAccount",
+						"v1",
+						"sortcode",
+						"{{sort-code}}",
+						"account",
+						"{{account-number}}"
+					]
+				},
+				"description": "### Summary\n\nTakes a sort code and account number strings as input and returns 200 if the provided sort code and account combination is valid. This endpoint also returns branch details for the associated bank branch using the Branch schema, , as well as supported payment types.\n\n### Errors\n\n- 400: No parameters provided\n- 404: Invalid sort code or account\n- 429: Too many requests sent by the client\n- 500: Unexpected error"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate Sort Code",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.mintly.uk/bankAccount/v1/sortcode/{{sort-code}}",
+					"protocol": "https",
+					"host": [
+						"api",
+						"mintly",
+						"uk"
+					],
+					"path": [
+						"bankAccount",
+						"v1",
+						"sortcode",
+						"{{sort-code}}"
+					]
+				},
+				"description": "### Summary\n\nTakes a sort code string as input and returns 200 if the provided sort code exists. This endpoint also returns branch details for the associated bank branch using the Branch schema, as well as supported payment types.\n\n### Errors\n\n- 400: No parameters provided\n- 404: Invalid sort code\n- 429: Too many requests sent by the client\n- 500: Unexpected error"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate SWIFT/BIC",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.mintly.uk/bankAccount/v1/swift/{{bic}}",
+					"protocol": "https",
+					"host": [
+						"api",
+						"mintly",
+						"uk"
+					],
+					"path": [
+						"bankAccount",
+						"v1",
+						"swift",
+						"{{bic}}"
+					]
+				},
+				"description": "### Summary\n\nTakes a BIC string as input and returns 200 if the provided branch exists. This endpoint also returns branch details for the associated bank branch using the Branch schema, as well as supported payment types.\n\n### Errors\n\n- 400: No parameters provided\n- 404: Invalid sort code\n- 429: Too many requests sent by the client\n- 500: Unexpected error"
+			},
+			"response": []
+		},
+		{
+			"name": "Validate IBAN",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.mintly.uk/bankAccount/v1/iban/{{iban}}",
+					"protocol": "https",
+					"host": [
+						"api",
+						"mintly",
+						"uk"
+					],
+					"path": [
+						"bankAccount",
+						"v1",
+						"iban",
+						"{{iban}}"
+					]
+				},
+				"description": "### Summary\n\nTakes an IBAN string as input and returns 200 if the provided IBAN is valid. This endpoint also returns branch details for the associated bank branch using the Branch schema, as well as supported payment types.\n\n### Errors\n\n- 400: No parameters provided\n- 404: Invalid IBAN\n- 429: Too many requests sent by the client\n- 500: Unexpected error"
+			},
+			"response": []
+		},
+		{
+			"name": "Check Identity",
+			"request": {
+				"method": "GET",
+				"header": [],
+				"url": {
+					"raw": "https://api.mintly.uk/bankAccount/v1/identity",
+					"protocol": "https",
+					"host": [
+						"api",
+						"mintly",
+						"uk"
+					],
+					"path": [
+						"bankAccount",
+						"v1",
+						"identity"
+					]
+				},
+				"description": "### Summary\n\nReturns 200 if the user is allowed to use the service. Returns 403 is the user is unauthorized."
+			},
+			"response": []
+		}
+	],
+	"auth": {
+		"type": "apikey",
+		"apikey": [
+			{
+				"key": "value",
+				"value": "{{api-key}}",
+				"type": "string"
+			},
+			{
+				"key": "key",
+				"value": "X-API-KEY",
+				"type": "string"
+			}
+		]
+	},
+	"event": [
+		{
+			"listen": "prerequest",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		},
+		{
+			"listen": "test",
+			"script": {
+				"type": "text/javascript",
+				"exec": [
+					""
+				]
+			}
+		}
+	],
+	"variable": [
+		{
+			"key": "api-key",
+			"value": "",
+			"type": "default"
+		},
+		{
+			"key": "sort-code",
+			"value": "010004",
+			"type": "default"
+		},
+		{
+			"key": "account-number",
+			"value": "12345679",
+			"type": "default"
+		},
+		{
+			"key": "bic",
+			"value": "NWBKGB2118R",
+			"type": "default"
+		},
+		{
+			"key": "iban",
+			"value": "GB96NWBK01000412345679",
+			"type": "default"
+		}
+	]
+}

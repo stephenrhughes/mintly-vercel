@@ -1,0 +1,99 @@
+export const metadata = {
+  "heading": "What is Modulus Checking and why should I do it?",
+  "readTime": "2 mins",
+  "related": [
+    {
+      "title": "High-volume bank account validation API",
+      "href": "/articles/high-volume-bank-account-validation-api"
+    },
+    {
+      "title": "Bank validation APIs: how they work",
+      "href": "/articles/bank-validation-api"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2024-04-05",
+  "modified": "2026-09-09"
+};
+
+## What Is Bank Account Modulus Checking?
+
+UK account numbers are not arbitrary. Each bank builds a deliberate mathematical relationship into the digits, so that a valid account number and its sort code satisfy an arithmetic test that a mistyped one almost certainly will not. Modulus checking is that test.
+
+It is the same principle as the check digit on a credit card or an ISBN, applied to the fourteen digits of a sort code and account number together. Run it before you submit a payment and you catch the typo while the customer is still in front of you, rather than three working days later when Bacs rejects the file.
+
+For paperless Direct Debit sign-ups - over the phone or through a web form - modulus checking is not just useful. The Direct Debit scheme rules require the details to pass it before the mandate is lodged through [AUDDIS](/articles/auddis).
+
+<Image src="/assets/img/theme/bank-customer.png" alt="Bank customer using a smartphone to check a sort code" width={1200} height={2000} />
+
+## How Does Modulus Checking Work?
+
+Modulus checking applies a mathematical formula (an algorithm) to a bank account number and sort code. This algorithm checks whether the combination follows the expected structure for that financial institution. In the UK, there are dozens of different modulus checking rules, depending on the bank and account type. These rules are maintained and regularly updated by Bacs and other providers to keep up with changes in the banking system. When a modulus check is run, it can return a few possible results:
+
+-   **Valid:** The details match the expected pattern for that bank.
+-   **Failed check:** The numbers don't pass the check - likely indicating a typo or invalid details.
+-   **Not checked:** The financial institution hasn't made a check rule available for those details.
+-   **Invalid length:** The sort code or account number doesn't have the required number of digits (always 6 digits for a sort code, usually 8 digits for an account number).
+
+You can try Mintly's [free modulus checking tool](/sort-code-checker) to see how it works.
+
+## The Modulus Checking Algorithms Explained
+
+UK modulus checking isn't a single formula. The rules are published and maintained by Pay.UK and VocaLink (a Mastercard company) in the _Validating Account Numbers_ specification, and each sort code range is assigned one or more of three algorithm types:
+
+-   **Modulus 10** - the account digits are multiplied by a fixed set of weights, the products are summed, and the total must be exactly divisible by 10 to pass.
+-   **Modulus 11** - similar, but the weighted sum must be divisible by 11. It uses a different weighting table and catches different classes of error.
+-   **Double Alternate (DblAl)** - a Modulus 10 variant using alternating weights of 2 and 1. Where a weighted product reaches double figures, its two digits are added together before the total is summed. The total must then divide by 10.
+
+On top of this, the specification defines a set of numbered **exception rules** that modify how the check runs for particular banks - for example, substituting the sort code for certain ranges, running a second check, or skipping the check entirely. Some sort codes require two passes and are only valid if both succeed. This is why an accurate implementation needs the full, current weighting tables and exception logic, not just the headline formulas.
+
+### How a single check runs
+
+Take sort code `08-99-99` and account number `66374958`. The sort code is used to look up which weighting row applies. Those fourteen digits are then lined up against the fourteen weights, each pair multiplied, the products summed, and the total tested for divisibility by 10 or 11 depending on the method. Divides cleanly, it passes. Does not, it fails - and you have caught a likely typo before any money moved.
+
+The complication is that a sort code can appear twice in the table, with two different weighting rows. Some of those pairs must both pass; for others, passing either one is enough. Get that logic wrong and you produce an implementation that looks correct on your test cases and quietly rejects real customers at one particular bank.
+
+### Automating it with an API
+
+Rather than porting and maintaining the full ruleset yourself, most teams call a validation API. With Mintly it's a single request:
+
+```bash
+curl https://api.mintly.uk/bankAccount/v1/sortcode/089999/account/66374958 \
+  -H "x-api-key: YOUR_API_KEY"
+```
+The API runs the correct algorithm and exception rules for that sort code and returns a validation status plus the branch data. See our [Python](/integration-guides/python-integration) and [C#/.NET](/integration-guides/csharp-integration) integration guides to get started, or read how to handle [high volumes of 50,000+ checks a month](/articles/high-volume-bank-account-validation-api).
+
+## What Modulus Checking Can (and Can't) Do
+
+What it does:
+
+-   Confirms whether a sort code and account number pairing follows a valid pattern.
+-   Helps reduce errors before payments are sent.
+-   Can be integrated into payment systems or used via online services.
+
+What it doesn't do:
+
+-   Confirm that the bank account actually exists.
+-   Verify that the account belongs to a particular person.
+-   Guarantee that the account supports Direct Debits or Direct Credits.
+
+For full validation - like confirming account ownership or Direct Debit eligibility - additional services are required. Mintly's tools can help confirm the payment types accepted by a finance institution.
+
+## How to Set Up Modulus Checking
+
+If you're handling Direct Debit or bank transfers, modulus checking can be added to your payment process in a few ways:
+
+-   **Via your Direct Debit provider:** Many providers, like GoCardless, handle modulus checks automatically when customers submit their details.
+-   **Using a third-party modulus checking service like Mintly:** Available as online tools, APIs, or software integrations. Options range from free trials for low volumes to paid services for larger businesses.
+-   **Building it into your own systems:** Large businesses with in-house development teams can implement modulus checking rules themselves, though these need regular updates to stay accurate with the latest data and rule changes.
+
+## One thing to get right in your code
+
+However you implement it, handle the "cannot be checked" case separately from a failure. Not every sort code has a published rule, and for those the honest answer is that there is no way to tell rather than no. Teams that collapse the two into a single reject flag turn away perfectly good customers at a handful of banks, and rarely find out, because the people affected just abandon the form.
+
+Modulus checking will not confirm account ownership or guarantee a payment succeeds. What it does is remove the entire category of typos and transpositions, which for most businesses is where nearly all the bad bank details come from.
+
+If you want to talk through how it fits your process, or check whether it is worth automating at your volume, please [get in touch](/#contact).

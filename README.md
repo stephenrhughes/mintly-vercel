@@ -41,6 +41,18 @@ Still to do for phase 0: Vercel staging environment and the AWS OIDC roles.
 - `/admin/view-as/<user>`: view the portal as a user sees it, read-only, for up to an hour, with a banner and Exit (`ADM-13`, `NAV-19`)
 - `/admin/reports` (`ADM-14`), `/admin/plans` (`ADM-08`, `ADM-09`), `/admin/offers` (`ADM-11`; customers accept them in phase 7), `/admin/sso`, `/admin/admins` and `/admin/feedback`
 
+**Phase 6: the marketing site** (plan §6.9, §6.10). In place:
+
+- Every public page from the old site in the new design with the old copy, titles and descriptions, under the `(site)` route group, fully static (`ensureStatic`). The route registry in `src/lib/marketing/routes.ts` drives the sitemap, footer and listings, and a test fails if any of the old sitemap's 42 URLs loses its page (`WEB-01`–`WEB-03`)
+- Articles, integration guides, release notes and legal pages are MDX in `src/content`; the FAQ is data in `src/content/faq.ts`
+- Per-page metadata and JSON-LD (`src/lib/marketing/`), the 31 old redirects, `sitemap.xml` and `robots.txt` (`WEB-02`, `WEB-03`)
+- Static allowlist CSPs: one for the sales site, a tighter one for the app (`src/lib/csp.ts`; `WEB-04`, `APP-10`)
+- Cookie consent with separate analytics and marketing choices; GA4, Clarity, the Meta Pixel and Google Ads load only after consent; Tawk.to chat and Cal.com booking as before (`WEB-06`)
+- `/docs` and `/eiscd-docs/*` with ReDoc served from our own origin over a server-rendered summary of each spec; `npm run openapi:check` and `openapi:lint` run in `npm run check` (`DOC-*`)
+- The free sort code checker (`POST /api/free-check`, 10 checks per IP per week, `FREE-*`), the qualification enquiry (`LEAD-01`), ratings and the BACS checklist email capture (`LEAD-02`)
+
+Before launch: rotate the free checker's API key and the reCAPTCHA secret (both were in the old repo's source), then set `FREE_CHECKER_API_KEY`, the reCAPTCHA keys and the analytics IDs in Vercel (see [`.env.example`](./.env.example)).
+
 ## Getting started
 
 Requirements: Node 22 (`nvm use`), and Docker for the local database.
@@ -92,13 +104,16 @@ docs/                  plan, requirements and specs
 e2e/                   Playwright tests
 src/app/               routes (App Router)
 src/components/ui/     shadcn/ui components
-src/components/site/   marketing site header and footer
+src/app/(site)/        the sales site pages (static)
+src/components/site/   sales site components: header, footer, consent, free checker, enquiry
+src/content/           articles, guides, legal pages (MDX) and the FAQ
 src/app/app/           the app (sign-in, portal, admin), served from the app host (APP-02)
 src/components/app/    the app layout and sidebar
 src/lib/               shared logic (plan §2: seats, pricing, Stripe, AWS adapter, …)
 src/lib/auth/          session and permission checks (the data access layer)
 src/proxy.ts           host routing and session refresh
-scripts/               database helper scripts
+scripts/               database, OpenAPI, skill-packaging and vendor scripts
+skills/                the agent skills zipped into public/assets (npm run skills:package)
 supabase/              config, migrations and database tests
 ```
 

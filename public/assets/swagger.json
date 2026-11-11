@@ -1,0 +1,1173 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "Mintly Bank Account Checker API",
+    "termsOfService": "https://www.mintly.uk/terms",
+    "contact": {
+      "email": "support@mintly.uk"
+    },
+    "version": "1.2.1",
+    "description": "The Mintly Bank Account Checker API connects your application to our\ncomprehensive database of sort codes, bank contact and payment type details,\nand account number modulus algorithms. With a subscription you can check\nunlimited UK and Ireland sort codes and bank account numbers, plus unlimited\nIBAN and SWIFT/BIC lookups.\n\nThe API is RESTful, using predictable, resource-oriented URLs with standard\nHTTP methods and status codes. All responses are JSON. Because it is\nOpenAPI 3.0 compliant, it integrates cleanly with any tooling that\nunderstands the OpenAPI standard.\n\nQuestions? Email us at [support@mintly.uk](mailto:support@mintly.uk).\n\n## Authentication\n\nEvery request must carry an `X-API-KEY` header set to your organisation's\nunique key. Keep this secret — it identifies and bills your account. You can\nfind your key in your [Mintly account](https://www.mintly.uk/dashboard).\n\n```\nX-API-KEY: YOUR_API_KEY\n```\n\nCall [`GET /identity`](#tag/Authentication-Check/operation/getIdentity) to confirm a key\nworks before wiring up anything else.\n\n## Security\n\nAll Mintly APIs are served over HTTPS with TLS 1.2, so data is encrypted in\ntransit. Never embed your API key in client-side code — proxy requests\nthrough your own backend instead.\n\n## Environments\n\n| Environment | Base URL | Counts towards usage |\n|---|---|---|\n| Production | `https://api.mintly.uk/bankAccount/v1` | Yes |\n| Sandbox | `https://sandbox.mintly.uk/bankAccount/v1` | No |\n\nDevelop against the **sandbox** first, so you can exercise every error path\nwithout consuming your allowance. The sandbox still requires your API key,\nbut it returns a fixed set of responses and cannot perform real checks.\n\nSandbox test values — every other input returns `404`:\n\n| Input | Value |\n|---|---|\n| Sort code | `424242` |\n| Account number | `42424242` |\n| SWIFT/BIC | `TEST4242XXX` |\n| IBAN | `GB42SAND424242 42424242` |\n\nEach request to production counts as one check against your monthly\nallowance. If your plan includes 10,000 checks, that is 10,000 requests.\n\n## Status codes\n\nWe use standard HTTP status codes, including but not limited to:\n\n| Status | Meaning |\n|---|---|\n| `200` OK | The request succeeded and produced a valid check. |\n| `400` Bad request | Something was wrong with the request. Check the error message in the response. |\n| `401` Unauthorised | Your credentials are invalid or have expired. |\n| `403` Forbidden | Authentication failed — the key has expired, or no key was provided. |\n| `404` Not found | The requested resource does not exist, so the result is invalid. |\n| `429` Too many requests | You have exceeded the rate limit. Wait, then retry with exponential backoff. |\n| `500` Server error | Something went wrong on our side — get in touch so we can look into it. |\n\nErrors return a `Status` of `Error` or `Invalid` alongside a human-readable\n`Message`.\n\n## Backwards compatibility\n\nThe API is designed to be backwards compatible: changes should not disrupt\nexisting integrations. We may add new fields or response values, but we will\nnot remove or rename existing fields, nor change their behaviour in a way\nthat breaks current usage. We follow\n[semantic versioning](https://semver.org) for API releases.\n\nBuild your integration to handle non-breaking changes gracefully, such as\nnew fields or optional parameters. If a breaking change ever becomes\nnecessary, we will give advance notice and a clear migration path, and keep\nthe existing version available for a defined deprecation period.\n\n## AI agent skill\n\nInstall the Mintly Bank Account Checker agent skill for AI-assisted\nintegration help inside your editor. Once installed, invoke `/mintly-api`\nto generate client code, handle errors, and test against the sandbox.\n\n**[Download the agent skill](https://www.mintly.uk/assets/mintly-api-skill.zip)**\n\nBuilt on the [Agent Skills open standard](https://agentskills.io/clients),\nit works with Claude Code, VS Code (GitHub Copilot), OpenAI Codex, Cursor,\nGemini CLI, and many more.\n"
+  },
+  "externalDocs": {
+    "description": "Find out more about Mintly",
+    "url": "https://www.mintly.uk"
+  },
+  "servers": [
+    {
+      "url": "https://api.mintly.uk/bankAccount/v1",
+      "description": "Production — every request counts towards your monthly allowance"
+    },
+    {
+      "url": "https://sandbox.mintly.uk/bankAccount/v1",
+      "description": "Sandbox — fixed responses, not billed"
+    }
+  ],
+  "tags": [
+    {
+      "name": "Sort Code & Account Validation",
+      "description": "API endpoints to check sort codes and account numbers, to return branch information and accepted payment types"
+    },
+    {
+      "name": "SWIFT / BIC Validation",
+      "description": "API endpoint to lookup SWIFT or BIC codes, to return branch information and accepted payment types"
+    },
+    {
+      "name": "IBAN Validation",
+      "description": "API endpoint to validate IBANs and return branch information and accepted payment types"
+    },
+    {
+      "name": "Authentication Check",
+      "description": "API endpoint for confirming API access"
+    }
+  ],
+  "x-tagGroups": [
+    {
+      "name": "Bank account validation",
+      "tags": [
+        "Sort Code & Account Validation",
+        "SWIFT / BIC Validation",
+        "IBAN Validation"
+      ]
+    },
+    {
+      "name": "Account",
+      "tags": [
+        "Authentication Check"
+      ]
+    }
+  ],
+  "paths": {
+    "/sortcode/{sortCode}": {
+      "get": {
+        "tags": [
+          "Sort Code & Account Validation"
+        ],
+        "operationId": "getSortCode",
+        "summary": "Check a sort code is valid",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl 'https://api.mintly.uk/bankAccount/v1/sortcode/404784' \\\n  --header 'X-API-KEY: YOUR_API_KEY'\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Node.js",
+            "source": "const res = await fetch(\n  `${BASE_URL}/sortcode/${encodeURIComponent(sortCode)}`,\n  { headers: { 'x-api-key': process.env.MINTLY_API_KEY } }\n)\nconst account = await res.json()\n"
+          },
+          {
+            "lang": "Python",
+            "source": "res = session.get(f\"{BASE_URL}/sortcode/{sort_code}\")\nres.raise_for_status()\naccount = res.json()\n"
+          },
+          {
+            "lang": "C#",
+            "source": "var res = await _http.GetAsync($\"/sortcode/{sortCode}\");\nres.EnsureSuccessStatusCode();\nvar account = await res.Content.ReadFromJsonAsync<Account>();\n"
+          }
+        ],
+        "description": "Takes a sort code string as input and returns 200 if the provided sort code exists. This endpoint also returns branch details for the associated bank branch using the Branch schema, as well as supported payment types. Supports all UK banks and finance institutions available in the Extended Industry Sort Code Directory (EISCD).\n\n***Sandbox***: In the sandbox environment, the sort code `424242` will return valid, while all others will be invalid.\n",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/sortCodeParameter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation, the sort code is valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SortCodeOnly"
+                },
+                "examples": {
+                  "sortCode": {
+                    "$ref": "#/components/examples/SortCodeValidationExample"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No parameters provided, or invalid parameters provided. See the error message for more details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised. The API key is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No API key provided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid sort code value. The sort code is not active or does not exist in our database.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalidSortCode": {
+                    "summary": "Invalid Sort Code",
+                    "value": {
+                      "Status": "Invalid",
+                      "Message": "Invalid sort code"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests sent by the client, exceeding the rate limit. Wait and try again."
+          },
+          "500": {
+            "description": "Unexpected error."
+          }
+        }
+      }
+    },
+    "/swift/{bic}": {
+      "get": {
+        "tags": [
+          "SWIFT / BIC Validation"
+        ],
+        "operationId": "getSwift",
+        "summary": "Check a SWIFT/BIC is valid",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl 'https://api.mintly.uk/bankAccount/v1/swift/HLFXGB21XXX' \\\n  --header 'X-API-KEY: YOUR_API_KEY'\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Node.js",
+            "source": "const res = await fetch(\n  `${BASE_URL}/swift/${encodeURIComponent(bic)}`,\n  { headers: { 'x-api-key': process.env.MINTLY_API_KEY } }\n)\nconst account = await res.json()\n"
+          },
+          {
+            "lang": "Python",
+            "source": "res = session.get(f\"{BASE_URL}/swift/{bic}\")\nres.raise_for_status()\naccount = res.json()\n"
+          },
+          {
+            "lang": "C#",
+            "source": "var res = await _http.GetAsync($\"/swift/{bic}\");\nres.EnsureSuccessStatusCode();\nvar account = await res.Content.ReadFromJsonAsync<Account>();\n"
+          }
+        ],
+        "description": "Takes a BIC string as input and returns 200 if the provided branch exists in our database. This endpoint also returns branch details for the associated bank branch using the Branch schema, as well as supported payment types.\n\n__The BIC provided must be 11 digits long. If you have an 8 digit BIC, you must add the suffix `XXX`.__\n\nIf the BIC is not found in our database a 404 Not Found response is given; the BIC may still be valid but not exist in our database. Coverage of SWIFT/BIC is restricted to UK, Ireland and EEA SEPA member banks.\n\n***Sandbox***: In the sandbox environment, the BIC `TEST4242XXX` will return valid, while all others will be invalid.\n",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/bicParameter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation, the BIC is valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                },
+                "examples": {
+                  "swift": {
+                    "$ref": "#/components/examples/SortCodeValidationExample"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No parameters provided, or invalid parameters provided. See the error message for more details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised. The API key is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No API key provided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "BIC not found. The BIC could still be valid, but does not exist in our database of UK, Ireland and EEA SEPA banks.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "bicNotSupported": {
+                    "summary": "BIC Not Supported",
+                    "value": {
+                      "Status": "Error",
+                      "Message": "The SWIFT code requested is outside our coverage. Only UK and EEA banks supported."
+                    }
+                  },
+                  "bicNotFound": {
+                    "summary": "BIC Not Found",
+                    "value": {
+                      "Status": "Invalid",
+                      "Message": "SWIFT code not found"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests sent by the client, exceeding the rate limit. Wait and try again."
+          },
+          "500": {
+            "description": "Unexpected error."
+          }
+        }
+      }
+    },
+    "/sortcode/{sortCode}/account/{accountNumber}": {
+      "get": {
+        "tags": [
+          "Sort Code & Account Validation"
+        ],
+        "operationId": "getSortCodeAccount",
+        "summary": "Check a sort code and account number pair are valid",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl 'https://api.mintly.uk/bankAccount/v1/sortcode/404784/account/70872490' \\\n  --header 'X-API-KEY: YOUR_API_KEY'\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Node.js",
+            "source": "const res = await fetch(\n  `${BASE_URL}/sortcode/${encodeURIComponent(sortCode)}` +\n    `/account/${encodeURIComponent(accountNumber)}`,\n  { headers: { 'x-api-key': process.env.MINTLY_API_KEY } }\n)\nconst account = await res.json()\n"
+          },
+          {
+            "lang": "Python",
+            "source": "res = session.get(f\"{BASE_URL}/sortcode/{sort_code}/account/{account_number}\")\nres.raise_for_status()\naccount = res.json()\n"
+          },
+          {
+            "lang": "C#",
+            "source": "var res = await _http.GetAsync($\"/sortcode/{sortCode}/account/{accountNumber}\");\nres.EnsureSuccessStatusCode();\nvar account = await res.Content.ReadFromJsonAsync<Account>();\n"
+          }
+        ],
+        "description": "Takes a sort code and account number strings as input and returns 200 if the provided sort code and account combination is valid. This endpoint also returns branch details for the associated bank branch using the Branch schema, as well as supported payment types. Supports all UK banks and finance institutions available in the Extended Industry Sort Code Directory (EISCD).\n\nPerforms sort code lookup using the EISCD, and modulus checks (where available). A valid result does not guarantee that the account exists, only that it is a valid number for the sort code provided.\n\n***Sandbox***: In the sandbox environment, sort code `424242` and account number `42424242` will return valid, while all others will be invalid.\n",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/sortCodeParameter"
+          },
+          {
+            "$ref": "#/components/parameters/accountNumberParameter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation, the sort code and account number combination are valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                },
+                "examples": {
+                  "sortCodeAndAccount": {
+                    "$ref": "#/components/examples/SortCodeAccountValidationExample"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No parameters provided, or invalid parameters provided. See the error message for more details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised. The API key is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No API key provided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Invalid sort code or account number. See the error message for more details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalidSortCode": {
+                    "summary": "Invalid Sort Code",
+                    "value": {
+                      "Status": "Invalid",
+                      "Message": "Invalid sort code"
+                    }
+                  },
+                  "invalidAccountNumber": {
+                    "summary": "Invalid Account Number",
+                    "value": {
+                      "Status": "Invalid",
+                      "Message": "Invalid account number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests sent by the client, exceeding the rate limit. Wait and try again."
+          },
+          "500": {
+            "description": "Unexpected error."
+          }
+        }
+      }
+    },
+    "/iban/{iban}": {
+      "get": {
+        "tags": [
+          "IBAN Validation"
+        ],
+        "operationId": "getIban",
+        "summary": "Check an IBAN is valid",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl 'https://api.mintly.uk/bankAccount/v1/iban/GB29NWBK40478470872490' \\\n  --header 'X-API-KEY: YOUR_API_KEY'\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Node.js",
+            "source": "const res = await fetch(\n  `${BASE_URL}/iban/${encodeURIComponent(iban.replace(/\\s/g, ''))}`,\n  { headers: { 'x-api-key': process.env.MINTLY_API_KEY } }\n)\nconst account = await res.json()\n"
+          },
+          {
+            "lang": "Python",
+            "source": "res = session.get(f\"{BASE_URL}/iban/{iban.replace(' ', '')}\")\nres.raise_for_status()\naccount = res.json()\n"
+          },
+          {
+            "lang": "C#",
+            "source": "var res = await _http.GetAsync($\"/iban/{iban.Replace(\" \", \"\")}\");\nres.EnsureSuccessStatusCode();\nvar account = await res.Content.ReadFromJsonAsync<Account>();\n"
+          }
+        ],
+        "description": "Takes an IBAN string as input and returns 200 if the provided IBAN is valid. \n\n__For UK, Republic of Ireland and Germany__: this endpoint also returns branch details (BranchData) for the associated bank branch using the Branch schema, as well as supported payment types.\n\n__For Rest of World__: IBAN lookup will only return Valid/Invalid status after performing checkdigit and national account validations.\n\n***Sandbox***: In the sandbox environment, the IBAN `GB 42 SAND 424242 42424242` will be valid, while all others will be invalid.\n",
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/ibanParameter"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation, the IBAN is valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Account"
+                },
+                "examples": {
+                  "ukIbanExample": {
+                    "$ref": "#/components/examples/IbanValidationExample"
+                  },
+                  "rowIbanExample": {
+                    "$ref": "#/components/examples/ROWIbanValidationExample"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "No parameters provided, or invalid parameters provided. See the error message for more details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorised. The API key is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No API key provided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "IBAN invalid, see the error message for more details.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "ibanInvalid": {
+                    "summary": "Invalid IBAN",
+                    "value": {
+                      "Status": "Invalid",
+                      "Message": "Invalid IBAN"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests sent by the client, exceeding the rate limit. Wait and try again."
+          },
+          "500": {
+            "description": "Unexpected error."
+          }
+        }
+      }
+    },
+    "/identity": {
+      "get": {
+        "tags": [
+          "Authentication Check"
+        ],
+        "operationId": "getIdentity",
+        "summary": "Check API authentication",
+        "description": "Used for testing API authentication.",
+        "x-codeSamples": [
+          {
+            "lang": "cURL",
+            "source": "curl 'https://api.mintly.uk/bankAccount/v1/identity' \\\n  --header 'X-API-KEY: YOUR_API_KEY'\n"
+          },
+          {
+            "lang": "JavaScript",
+            "label": "Node.js",
+            "source": "const res = await fetch(`${BASE_URL}/identity`, {\n  headers: { 'x-api-key': process.env.MINTLY_API_KEY },\n})\nconst identity = await res.json()\n"
+          },
+          {
+            "lang": "Python",
+            "source": "res = session.get(f\"{BASE_URL}/identity\")\nres.raise_for_status()\nidentity = res.json()\n"
+          },
+          {
+            "lang": "C#",
+            "source": "var res = await _http.GetAsync(\"/identity\");\nres.EnsureSuccessStatusCode();\nvar identity = await res.Content.ReadFromJsonAsync<Identity>();\n"
+          }
+        ],
+        "security": [
+          {
+            "api_key": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Identity is valid.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Identity"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Identity is unauthorized. The API key is invalid or expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "No API key provided.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too many requests sent by the client, exceeding the rate limit. Wait and try again."
+          },
+          "500": {
+            "description": "Unexpected error."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "securitySchemes": {
+      "api_key": {
+        "type": "apiKey",
+        "name": "x-api-key",
+        "in": "header"
+      }
+    },
+    "parameters": {
+      "sortCodeParameter": {
+        "name": "sortCode",
+        "in": "path",
+        "description": "The sort code for the branch. Can optionally contain dashes or spaces.",
+        "required": true,
+        "explode": true,
+        "example": "00-00-00",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "bicParameter": {
+        "name": "bic",
+        "in": "path",
+        "description": "The SWIFT/BIC for the branch. Can optionally contain dashes or spaces.",
+        "required": true,
+        "explode": true,
+        "example": "HLFXGB21XXX",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "accountNumberParameter": {
+        "name": "accountNumber",
+        "in": "path",
+        "description": "The account number to validate. Can optionally contain dashes or spaces.",
+        "required": true,
+        "explode": true,
+        "example": "12345678",
+        "schema": {
+          "type": "string"
+        }
+      },
+      "ibanParameter": {
+        "name": "iban",
+        "in": "path",
+        "description": "IBAN to validate. Can optionally contain dashes or spaces.",
+        "required": true,
+        "example": "GB29 NWBK 404784 70872490",
+        "schema": {
+          "type": "string"
+        }
+      }
+    },
+    "schemas": {
+      "SortCodeOnly": {
+        "type": "object",
+        "properties": {
+          "BranchData": {
+            "$ref": "#/components/schemas/Branch"
+          },
+          "Status": {
+            "type": "string",
+            "example": "Valid",
+            "description": "The status of the check. Will be \"Valid\" for a successful check."
+          }
+        }
+      },
+      "Account": {
+        "type": "object",
+        "properties": {
+          "BranchData": {
+            "$ref": "#/components/schemas/Branch"
+          },
+          "DerivedIban": {
+            "type": "string",
+            "description": "For accounts, the derived IBAN is provided. Is not provided for requests with sort code or BIC only.",
+            "example": "GB 96 ABCD 010011 12345678"
+          },
+          "ModulusCheckCompleted": {
+            "type": "boolean",
+            "description": "Whether the modulus check was performed. This is only provided for Sort Code & Account number requests and UK/ROI IBAN requests. Note that not all sort code ranges have modulus check algorithms defined; in these cases the result is Valid and ModulusCheckCompleted is false.",
+            "example": true
+          },
+          "Status": {
+            "type": "string",
+            "example": "Valid",
+            "description": "The status of the check. Will be \"Valid\" for a successful check."
+          }
+        },
+        "required": [
+          "Status"
+        ]
+      },
+      "Branch": {
+        "type": "object",
+        "description": "Information about the bank branch.",
+        "properties": {
+          "Info": {
+            "$ref": "#/components/schemas/Info"
+          },
+          "Address": {
+            "$ref": "#/components/schemas/Address"
+          },
+          "PaymentTypes": {
+            "$ref": "#/components/schemas/PaymentTypes"
+          },
+          "PaymentSchemeClosedDates": {
+            "$ref": "#/components/schemas/PaymentSchemeClosedDates"
+          },
+          "Redirection": {
+            "$ref": "#/components/schemas/Redirection"
+          }
+        },
+        "required": [
+          "Info",
+          "Address",
+          "PaymentTypes",
+          "PaymentSchemeClosedDates",
+          "Redirection"
+        ]
+      },
+      "Info": {
+        "type": "object",
+        "description": "Basic branch information, including branch name and owning bank.",
+        "properties": {
+          "SortCode": {
+            "type": "string",
+            "description": "The six digit sort code for the branch",
+            "example": "100144"
+          },
+          "ShortOwningBank": {
+            "type": "string",
+            "description": "The name of the bank. Maximum 20 characters.",
+            "example": "NAT WEST"
+          },
+          "BranchName": {
+            "type": "string",
+            "description": "The name of the branch. It defines the actual location of the bank office. Maximum 30 characters.",
+            "example": "BRANCH NAME"
+          },
+          "BicField1": {
+            "type": "string",
+            "description": "The first part of the Bank Identification Code (BIC). Maximum 8 characters. Some branches do not have BIC.",
+            "example": "AB12ABC"
+          },
+          "BicField2": {
+            "type": "string",
+            "description": "The second part of the Bank Identification Code (BIC). Maximum 3 characters. Some branches do not have BIC.",
+            "example": "XXX"
+          },
+          "ShortBranchTitle": {
+            "type": "string",
+            "description": "The short branch title. Maximum 30 characters.",
+            "example": "Bank Branch Title"
+          },
+          "SupervisoryBody": {
+            "type": "string",
+            "description": "The supervisory body (A for PRA/FCA, B for other financial authorities, C for Jersey, Guernsey or Isle of Man, D for Other)",
+            "example": "A"
+          },
+          "BranchMinorLocation": {
+            "type": "string",
+            "description": "Optional field; indicates the actual branch minor location. Maximum 30 characters.",
+            "example": "Branch Location"
+          },
+          "BranchMajorLocation": {
+            "type": "string",
+            "description": "Optional field; indicates the actual branch major location, usually nearest postal office district. Maximum 30 characters.",
+            "example": "BATH"
+          }
+        },
+        "required": [
+          "ShortOwningBank"
+        ]
+      },
+      "Address": {
+        "type": "object",
+        "description": "The postal address provided by the bank. Note that this may not be the postal address of the branch, and could be a central customer service address for some banks.",
+        "properties": {
+          "BranchAddressPart1": {
+            "type": "string",
+            "description": "The first line of the address. Maximum 40 characters.",
+            "example": "123 Main Street"
+          },
+          "BranchAddressPart2": {
+            "type": "string",
+            "description": "The second line of the address. Maximum 40 characters."
+          },
+          "BranchAddressPart3": {
+            "type": "string",
+            "description": "The third line of the address. Maximum 40 characters."
+          },
+          "BranchAddressPart4": {
+            "type": "string",
+            "description": "The fourth line of the address. Maximum 40 characters."
+          },
+          "BranchTown": {
+            "type": "string",
+            "description": "The postal town of the address. Maximum 30 characters.",
+            "example": "Hobbiton"
+          },
+          "BranchCounty": {
+            "type": "string",
+            "description": "The postal county of the address. Maximum 30 characters.",
+            "example": "The Shire"
+          },
+          "BranchPostCode1": {
+            "type": "string",
+            "description": "The first part of the postcode. Maximum 4 characters.",
+            "example": "B1"
+          },
+          "BranchPostCode2": {
+            "type": "string",
+            "description": "The second part of the postcode. Maximum 4 characters.",
+            "example": "LB0"
+          },
+          "BranchCountry": {
+            "type": "string",
+            "description": "The ISO Alpha-2 country code. Maximum 2 characters.",
+            "example": "GB"
+          },
+          "BranchTelephoneArea": {
+            "type": "string",
+            "description": "The area code of the branch telephone number",
+            "example": "0800"
+          },
+          "BranchTelephone": {
+            "type": "string",
+            "description": "The branch telephone number",
+            "example": "1234567"
+          },
+          "BranchTelephone2Area": {
+            "type": "string",
+            "description": "The area code of the branch secondary telephone number"
+          },
+          "BranchTelephone2": {
+            "type": "string",
+            "description": "The branch secondary telephone number"
+          }
+        }
+      },
+      "PaymentTypes": {
+        "type": "object",
+        "description": "Gives information on the types of payment schemes that the bank branch supports.",
+        "properties": {
+          "DirectDebitAccepted": {
+            "type": "boolean",
+            "description": "Whether the bank accepts Direct Debit payments"
+          },
+          "DirectCreditAccepted": {
+            "type": "boolean",
+            "description": "Whether the bank accepts Direct Credit payments"
+          },
+          "DirectDebitInstructionsAccepted": {
+            "type": "boolean",
+            "description": "Whether the bank accepts Direct Debit Instructions"
+          },
+          "AuddisAccepted": {
+            "type": "boolean",
+            "description": "Whether the bank accepts Automated Direct Debit Instructions (AUDDIS)"
+          },
+          "DividendInterestAccepted": {
+            "type": "boolean",
+            "description": "Whether the bank accepts Dividend Interest payments"
+          },
+          "BacsAccepted": {
+            "type": "boolean",
+            "description": "Whether the bank accepts BACS payments"
+          },
+          "ChapsAccepted": {
+            "type": "boolean",
+            "description": "Whether the bank accepts Chaps Sterling payments"
+          },
+          "IcsAccepted": {
+            "type": "boolean",
+            "description": "Whether the bank accepts ICS payments"
+          },
+          "FasterPaymentAccepted": {
+            "type": "boolean",
+            "description": "Whether the bank accepts Faster Payments"
+          },
+          "SepaMember": {
+            "type": "boolean",
+            "description": "Whether the bank is a member of SEPA (Single European Payments Area)"
+          },
+          "SepaDirectDebit": {
+            "type": "boolean",
+            "description": "Whether the bank supports SEPA Direct Debit"
+          }
+        },
+        "required": [
+          "DirectDebitAccepted",
+          "DirectCreditAccepted",
+          "DirectDebitInstructionsAccepted",
+          "AuddisAccepted",
+          "DividendInterestAccepted",
+          "BacsAccepted",
+          "ChapsAccepted",
+          "IcsAccepted",
+          "FasterPaymentAccepted",
+          "SepaMember",
+          "SepaDirectDebit"
+        ]
+      },
+      "PaymentSchemeClosedDates": {
+        "type": "object",
+        "description": "Where a bank branch has left a payment scheme, this object provides the dates that the scheme support ended.",
+        "properties": {
+          "BacsClosedDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date on which the branch stopped accepting BACS payments",
+            "example": "2018-03-20T09:12:28Z"
+          },
+          "ChapsClosedDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date on which the branch stopped accepting CHAPS payments",
+            "example": "2018-03-20T09:12:28Z"
+          },
+          "IcsClosedDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date on which the branch stopped accepting ICS",
+            "example": "2018-03-20T09:12:28Z"
+          },
+          "FasterPaymentsClosedDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date on which the branch stopped accepting Faster Payments",
+            "example": "2018-03-20T09:12:28Z"
+          },
+          "SepaClosedDate": {
+            "type": "string",
+            "format": "date-time",
+            "description": "The date on which the branch stopped accepting SEPA payments",
+            "example": "2018-03-20T09:12:28Z"
+          }
+        }
+      },
+      "Redirection": {
+        "type": "object",
+        "description": "Information on whether the branch supports redirected payments.",
+        "properties": {
+          "BacsRedirectionToSortCode": {
+            "type": "string",
+            "description": "The sort code that BACS payments to this branch will be redirected to",
+            "example": "123456"
+          },
+          "BacsHasTransferableAccountNumbers": {
+            "type": "boolean",
+            "description": "Whether the branch has numbered accounts that can be transferred. On redirection (if true) the account number is not set to zero.",
+            "example": true
+          },
+          "FasterPaymentsRedirectToSortCode": {
+            "type": "string",
+            "description": "The sort code that Faster Payments to this branch will be redirected to",
+            "example": "123456"
+          },
+          "FasterPaymentsHasTransferableAccountNumbers": {
+            "type": "boolean",
+            "description": "Whether the branch has numbered accounts that can be transferred. On redirection (if true) the account number is not set to zero.",
+            "example": false
+          }
+        }
+      },
+      "Identity": {
+        "type": "object",
+        "properties": {
+          "AuthId": {
+            "type": "string",
+            "description": "An authentication ID that is unique to your customer account. Will never change.",
+            "example": "ABC1"
+          },
+          "Status": {
+            "type": "string",
+            "description": "The status of the check. \"Valid\" for successful identity check.",
+            "example": "Valid"
+          }
+        },
+        "required": [
+          "Status",
+          "AuthId"
+        ]
+      },
+      "Error": {
+        "type": "object",
+        "description": "Provides additional context for API errors, along with the HTTP Status.",
+        "properties": {
+          "Status": {
+            "type": "string",
+            "description": "The status. For an error, will be \"Error\" or \"Invalid\"",
+            "example": "Error"
+          },
+          "Message": {
+            "type": "string",
+            "description": "A description of the error/problem that occurred, or reason for invalid result."
+          }
+        },
+        "required": [
+          "Status",
+          "Message"
+        ]
+      }
+    },
+    "examples": {
+      "SortCodeValidationExample": {
+        "summary": "Valid sort code",
+        "value": {
+          "BranchData": {
+            "Info": {
+              "ShortOwningBank": "NAT WEST",
+              "SortCode": "404784",
+              "BranchName": "BATH CITY",
+              "BicField1": "NWBKGB2L",
+              "BicField2": "XXX",
+              "ShortBranchTitle": "Bath City",
+              "SupervisoryBody": "A",
+              "BranchMinorLocation": "Bath",
+              "BranchMajorLocation": "BATH"
+            },
+            "Address": {
+              "BranchAddressPart1": "39 Milsom Street",
+              "BranchAddressPart2": "",
+              "BranchAddressPart3": "",
+              "BranchAddressPart4": "",
+              "BranchTown": "Bath",
+              "BranchCounty": "Avon",
+              "BranchPostCode1": "BA1",
+              "BranchPostCode2": "1DS",
+              "BranchCountry": "GB",
+              "BranchTelephoneArea": "08000",
+              "BranchTelephone": "1234567",
+              "BranchTelephone2Area": "08100",
+              "BranchTelephone2": "1234567"
+            },
+            "PaymentTypes": {
+              "DirectDebitAccepted": true,
+              "DirectCreditAccepted": true,
+              "DirectDebitInstructionsAccepted": true,
+              "AuddisAccepted": true,
+              "DividendInterestAccepted": true,
+              "BacsAccepted": true,
+              "ChapsAccepted": true,
+              "IcsAccepted": true,
+              "FasterPaymentAccepted": true,
+              "SepaMember": false,
+              "SepaDirectDebit": false
+            },
+            "PaymentSchemeClosedDates": {},
+            "Redirection": {
+              "BacsHasTransferableAccountNumbers": true,
+              "FasterPaymentsHasTransferableAccountNumbers": true
+            }
+          },
+          "Status": "Valid"
+        }
+      },
+      "SortCodeAccountValidationExample": {
+        "summary": "Valid sort code and account number",
+        "value": {
+          "BranchData": {
+            "Info": {
+              "ShortOwningBank": "NAT WEST",
+              "SortCode": "404784",
+              "BranchName": "BATH CITY",
+              "BicField1": "NWBKGB2L",
+              "BicField2": "XXX",
+              "ShortBranchTitle": "Bath City",
+              "SupervisoryBody": "A",
+              "BranchMinorLocation": "Bath",
+              "BranchMajorLocation": "BATH"
+            },
+            "Address": {
+              "BranchAddressPart1": "39 Milsom Street",
+              "BranchAddressPart2": "",
+              "BranchAddressPart3": "",
+              "BranchAddressPart4": "",
+              "BranchTown": "Bath",
+              "BranchCounty": "Avon",
+              "BranchPostCode1": "BA1",
+              "BranchPostCode2": "1DS",
+              "BranchCountry": "GB",
+              "BranchTelephoneArea": "08000",
+              "BranchTelephone": "1234567",
+              "BranchTelephone2Area": "08100",
+              "BranchTelephone2": "1234567"
+            },
+            "PaymentTypes": {
+              "DirectDebitAccepted": true,
+              "DirectCreditAccepted": true,
+              "DirectDebitInstructionsAccepted": true,
+              "AuddisAccepted": true,
+              "DividendInterestAccepted": true,
+              "BacsAccepted": true,
+              "ChapsAccepted": true,
+              "IcsAccepted": true,
+              "FasterPaymentAccepted": true,
+              "SepaMember": false,
+              "SepaDirectDebit": false
+            },
+            "PaymentSchemeClosedDates": {},
+            "Redirection": {
+              "BacsHasTransferableAccountNumbers": true,
+              "FasterPaymentsHasTransferableAccountNumbers": true
+            }
+          },
+          "DerivedIban": "GB29 NWBK 404784 70872490",
+          "ModulusCheckCompleted": true,
+          "Status": "Valid"
+        }
+      },
+      "IbanValidationExample": {
+        "summary": "UK IBAN",
+        "value": {
+          "BranchData": {
+            "Info": {
+              "ShortOwningBank": "NAT WEST",
+              "SortCode": "404784",
+              "BranchName": "BATH CITY",
+              "BicField1": "NWBKGB2L",
+              "BicField2": "XXX",
+              "ShortBranchTitle": "Bath City",
+              "SupervisoryBody": "A",
+              "BranchMinorLocation": "Bath",
+              "BranchMajorLocation": "BATH"
+            },
+            "Address": {
+              "BranchAddressPart1": "39 Milsom Street",
+              "BranchAddressPart2": "",
+              "BranchAddressPart3": "",
+              "BranchAddressPart4": "",
+              "BranchTown": "Bath",
+              "BranchCounty": "Avon",
+              "BranchPostCode1": "BA1",
+              "BranchPostCode2": "1DS",
+              "BranchCountry": "GB",
+              "BranchTelephoneArea": "08000",
+              "BranchTelephone": "1234567",
+              "BranchTelephone2Area": "08100",
+              "BranchTelephone2": "1234567"
+            },
+            "PaymentTypes": {
+              "DirectDebitAccepted": true,
+              "DirectCreditAccepted": true,
+              "DirectDebitInstructionsAccepted": true,
+              "AuddisAccepted": true,
+              "DividendInterestAccepted": true,
+              "BacsAccepted": true,
+              "ChapsAccepted": true,
+              "IcsAccepted": true,
+              "FasterPaymentAccepted": true,
+              "SepaMember": false,
+              "SepaDirectDebit": false
+            },
+            "PaymentSchemeClosedDates": {},
+            "Redirection": {
+              "BacsHasTransferableAccountNumbers": true,
+              "FasterPaymentsHasTransferableAccountNumbers": true
+            }
+          },
+          "DerivedIban": "GB29 NWBK 404784 70872490",
+          "ModulusCheckCompleted": true,
+          "Status": "Valid"
+        }
+      },
+      "ROWIbanValidationExample": {
+        "summary": "Non-UK IBAN",
+        "value": {
+          "Status": "Valid",
+          "DerivedIban": "XX55 XXXX 5555555555"
+        }
+      }
+    }
+  }
+}

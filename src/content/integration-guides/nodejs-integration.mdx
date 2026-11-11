@@ -1,0 +1,217 @@
+export const metadata = {
+  "heading": "Using Mintly Bank Validation APIs with Node.js",
+  "readTime": "12 mins",
+  "related": [
+    {
+      "title": "Connecting to the Mintly API with Python",
+      "href": "/integration-guides/python-integration"
+    },
+    {
+      "title": "Integration Guides: Connect Mintly with anything",
+      "href": "/integration-guides"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2025-04-29",
+  "modified": "2025-04-29"
+};
+
+This guide walks you through integrating Mintly's Bank Account Checker API into a TypeScript-based Node.js backend service. It covers setup, authentication, endpoint interaction, type safety, and error handling best practices.
+
+## Project Setup
+
+**Before you start, create a Mintly account and obtain your API key.**
+
+Now, create your project and install dependencies:
+
+```bash
+npm init -y
+npm install axios dotenv
+npm install --save-dev typescript @types/node ts-node
+```
+Create a `tsconfig.json` file:
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "outDir": "dist"
+  },
+  "include": ["src"]
+}
+```
+## API Authentication and Configuration
+
+Mintly uses an API key passed via the Authorization header. Create a `.env` file in the root of your project and add your API key. This file should not be committed to version control:
+
+```bash
+MINTLY_API_KEY=your_api_key_here
+MINTLY_BASE_URL=https://api.mintly.uk/bankAccount/v1
+```
+Next, create a config module:
+
+```typescript
+// src/config.ts
+import dotenv from 'dotenv';
+
+dotenv.config();
+
+export const config = {
+  apiKey: process.env.MINTLY_API_KEY!,
+  baseUrl: process.env.MINTLY_BASE_URL!,
+};
+```
+## Axios Client Setup
+
+Centralise the HTTP configuration and headers:
+
+```typescript
+// src/apiClient.ts
+import axios from 'axios';
+import { config } from './config';
+
+export const apiClient = axios.create({
+  baseURL: config.baseUrl,
+  headers: {
+    'x-api-key': config.apiKey,
+    'Content-Type': 'application/json',
+  },
+});
+```
+## Type Safety with TypeScript
+
+Define interfaces for the API request and response types:
+
+```typescript
+// src/types.ts
+
+export interface AccountResponse {
+  BranchData: Branch;
+  DerivedIban?: string;
+  Status: 'Valid' | 'Invalid' | 'Error';
+}
+
+export interface Branch {
+  Info: BranchInfo;
+  Address: Address;
+  PaymentTypes: PaymentTypes;
+}
+
+export interface BranchInfo {
+  SortCode: string;
+  ShortOwningBank: string;
+  BranchName: string;
+  BicField1: string;
+  BicField2: string;
+  ShortBranchTitle: string;
+  SupervisoryBody: string;
+}
+
+export interface Address {
+  BranchAddressPart1: string;
+  BranchAddressPart2: string;
+  BranchAddressPart3: string;
+  BranchAddressPart4: string;
+  BranchTown: string;
+  BranchCounty: string;
+  BranchPostCode1: string;
+  BranchPostCode2: string;
+  BranchCountry: string;
+  BranchTelephoneArea: string;
+  BranchTelephone: string;
+  BranchTelephone2Area: string;
+  BranchTelephone2: string;
+}
+
+export interface PaymentTypes {
+  DirectDebitAccepted: boolean;
+  DirectCreditAccepted: boolean;
+  FasterPaymentAccepted: boolean;
+  [key: string]: boolean;
+}
+
+export interface IdentityResponse {
+  AuthId: string;
+  Status: string;
+}
+
+export interface ErrorResponse {
+  Status: string;
+  Message: string;
+}
+```
+## API Methods
+
+Create a service to handle API requests. This example includes methods for validating an account and sort code. Additional functions can be added for Swift and IBAN:
+
+```typescript
+// src/mintlyService.ts
+import { apiClient } from './apiClient';
+import { AccountResponse, IdentityResponse } from './types';
+
+export async function getSortCodeDetails(sortCode: string) {
+  const response = await apiClient.get<AccountResponse>(`/sortcode/${sortCode}`);
+  return response.data;
+}
+
+export async function getAccountDetails(sortCode: string, accountNumber: string) {
+  const response = await apiClient.get<AccountResponse>(
+    `/sortcode/${sortCode}/account/${accountNumber}`
+  );
+  return response.data;
+}
+
+export async function checkIdentity() {
+  const response = await apiClient.get<IdentityResponse>(`/identity`);
+  return response.data;
+}
+```
+## Error Handling
+
+It's important to handle errors gracefully. Wrapping API calls in try-catch blocks allows you to manage errors effectively. You should expand this code to handle specific error cases as needed, like `429` responses:
+
+```typescript
+import axios from 'axios';
+
+export async function safeGetSortCodeDetails(sortCode: string) {
+  try {
+    const data = await getSortCodeDetails(sortCode);
+    return data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      console.error('Mintly API Error:', error.response?.data);
+    } else {
+      console.error('Unexpected Error:', error);
+    }
+    throw error;
+  }
+}
+```
+## Example Usage
+
+Here's how to use the service in your application:
+
+```typescript
+// src/index.ts
+import { getAccountDetails } from './mintlyService';
+
+async function run() {
+  try {
+    const accountInfo = await getAccountDetails('424242', '42424242');
+    console.log(accountInfo);
+  } catch (error) {
+    console.error('Error fetching account details:', error);
+  }
+}
+
+run();
+```
+This article demonstrates how to set up a Node.js application using TypeScript to interact with the Mintly API. It covers project setup, API authentication, type safety, and error handling. You can extend this example to include additional endpoints and functionality as needed. Happy coding!
+
+If you need further support, please reach out to us at [support@mintly.uk](mailto:support@mintly.uk)

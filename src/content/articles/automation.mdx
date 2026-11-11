@@ -1,0 +1,79 @@
+export const metadata = {
+  "heading": "How to Automate Bank Account Checking with an API",
+  "readTime": "4 mins",
+  "related": [
+    {
+      "title": "High-volume bank account validation API",
+      "href": "/articles/high-volume-bank-account-validation-api"
+    },
+    {
+      "title": "Bank validation APIs: how they work",
+      "href": "/articles/bank-validation-api"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2023-07-05",
+  "modified": "2026-09-09"
+};
+
+Most teams that check bank details by hand have settled into the same routine: a checker tool open in a second browser tab, a spreadsheet in the first, copy a sort code across, copy an account number across, read the result, type it back, repeat. It works. It also takes about twenty seconds per record and loses accuracy somewhere around the fortieth one.
+
+Automating it means moving that check out of a browser tab and into whatever system already holds the data - your onboarding form, your payroll process, your CRM. This is a guide to how that works in practice, where to put the check, and the one response case that trips most teams up on their first integration.
+
+## What is actually being checked
+
+It is worth being precise, because a lot of copy on this subject is not. An automated UK bank account check does two things:
+
+-   Looks up the six-digit sort code in the [Extended Industry Sort Code Directory](/articles/eiscd-data-file) to confirm the branch exists and to find out which payment schemes it supports.
+-   Runs [modulus checking](/articles/modulus-checking) on the sort code and account number together, using the bank's own published arithmetic, to confirm the pair is structurally valid.
+
+<Image src="/assets/img/theme/person_writing.jpg" alt="Automating bank account and sort code checks" width={400} height={1000} />
+
+What it does not do is confirm the account is open, or that it belongs to the person who gave it to you. There is no live directory of UK bank accounts that a third party can query, and anyone claiming otherwise is describing something else. Modulus checking catches typos, transpositions and invented numbers, which is the overwhelming majority of bad bank details you will ever see. Name matching is a separate service, Confirmation of Payee, and it runs on top rather than instead.
+
+## What an API call looks like
+
+An API is just a way for one system to ask another system a question. In this case the question is small enough to fit in a URL. You pass an API key in the `x-api-key` header and call one endpoint:
+
+```bash
+curl https://api.mintly.uk/bankAccount/v1/sortcode/424242/account/42424242 \
+  -H "x-api-key: YOUR_API_KEY"
+```
+You get back a validation status, the bank and branch the sort code belongs to, and flags for which payment types that branch accepts - typically in under 50ms. It is a standard REST call, so it behaves the same whether you make one a day or [fifty thousand a month](/articles/high-volume-bank-account-validation-api).
+
+## The response case that catches people out
+
+Not every sort code has a modulus rule. Some banks have never published one, and for those the correct answer to "is this account number valid?" is "there is no way to tell" rather than "no".
+
+A good API distinguishes the two, and your code needs to as well. If you treat an unchecked result as a failure, you will reject real customers with perfectly good accounts and never find out why, because the people affected simply give up on your form. Map a failed check to a hard stop; map an unchecked result to "proceed, and use the sort code data you did get". That distinction is worth more than most of the rest of the integration.
+
+## Where to put the check
+
+There are three sensible places, and most teams eventually use all three:
+
+1.  **At the point of capture.** Validate inside the form, while the customer still has their card in their hand. A typo caught here costs nothing. The same typo caught after a failed Bacs run costs a support ticket, a re-run and a slightly annoyed customer.
+    
+2.  **Before a batch submission.** Re-check the whole file before a payroll or supplier run goes to the bank. Details get edited between capture and payment, usually by someone in a hurry.
+    
+3.  **Periodically, over data you already hold.** This is the one people forget. Branches close and merge, and sort codes get migrated when banks are acquired. A record that validated cleanly three years ago may point at a branch that no longer accepts Direct Debits. Running your stored details through a check once a quarter surfaces that before a collection fails.
+    
+
+## Getting started
+
+1.  **Pick a provider.** The things that matter are where the data comes from, how often it is refreshed, and whether the pricing is legible. Mintly gives you 14 days free, no card required, so you can test against your own records rather than a demo dataset.
+    
+2.  **Run your existing data through it first.** Before you write any integration code, take a sample of the bank details you already hold and check them in bulk. Whatever comes back tells you how big the problem is and where it sits. It is also the number you will quote when someone asks whether this was worth doing.
+    
+3.  **Wire it in.** [Our documentation](/docs) covers the endpoints, and there are language-specific walkthroughs for [Python](/integration-guides/python-integration), [C#/.NET](/integration-guides/csharp-integration) and [Node.js](/integration-guides/nodejs-integration). If you would rather not write code at all, Zapier and Power Automate can call the API from an existing workflow.
+    
+4.  **Decide what happens on a failure.** This is a business decision, not a technical one. Block the submission, flag it for review, or accept it and warn - all three are reasonable depending on what you are protecting. Just decide it deliberately rather than inheriting whatever your first draft did.
+    
+
+## Is it worth it?
+
+The honest answer depends on your volume. If you check a dozen accounts a month, a free tool and a browser tab is fine. Somewhere north of a few hundred, the arithmetic changes quickly: the time spent checking is dwarfed by the time spent unpicking the ones that were checked wrong.
+
+If you want to work out where you sit, [our pricing page](/pricing) has the per-check costs, or [tell us roughly what your volumes look like](/#contact) and we will tell you whether automating is actually worth your time.

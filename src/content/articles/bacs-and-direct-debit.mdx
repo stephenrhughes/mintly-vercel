@@ -1,0 +1,76 @@
+export const metadata = {
+  "heading": "Bacs and Direct Debit Explained - and Where Validation Fits In",
+  "readTime": "5 mins",
+  "related": [
+    {
+      "title": "What is a sort code and why should I check it?",
+      "href": "/articles/sortcodes"
+    },
+    {
+      "title": "What is modulus checking and why should I do it?",
+      "href": "/articles/modulus-checking"
+    },
+    {
+      "title": "How Mintly can help with pre-AUDDIS checks",
+      "href": "/articles/auddis"
+    }
+  ],
+  "published": "2023-07-05",
+  "modified": "2026-09-09"
+};
+
+Bacs is the UK payment scheme most businesses use without ever thinking about it. Salaries, supplier payments, subscriptions, utility bills - the great majority move through Bacs, because it is cheap, predictable and has been working since 1968.
+
+What makes it worth understanding properly is its timing. Bacs is not instant, and the gap between submitting a payment and finding out it failed is where most of the operational pain in this area lives.
+
+## The three-day cycle
+
+Every Bacs payment runs on the same schedule. You submit your file on day one. Bacs processes it on day two. The money moves on day three. Working days only, so a Thursday submission settles on the following Monday.
+
+<Image src="/assets/img/theme/checking-number.png" alt="Using a computer to check accounts for BACS and Direct Debit" width={400} height={1000} />
+
+That fixed rhythm is exactly why bad data is expensive here. A mistyped account number is not rejected as you type it, or when you submit. It comes back on day three, and by then payroll was supposed to have landed and somebody is asking where their salary is.
+
+It also explains when to use something else. Faster Payments is near-instant and right for one-off or time-critical transfers. CHAPS is same-day and used for high-value transactions like property completions, at a per-payment fee. Bacs wins on cost and on bulk, which is why it still carries the payroll.
+
+## Two directions: Direct Credit and Direct Debit
+
+Bacs carries traffic both ways, and the distinction matters more than the shared name suggests.
+
+**Bacs Direct Credit** pushes money out - salaries, supplier invoices, refunds, pensions. You control the amount and the date. If the details are wrong the payment either bounces or, worse, lands in a real account belonging to somebody else.
+
+**Direct Debit** pulls money in, under a mandate the payer has given you. You control the timing and the amount, within the advance notice you have agreed - typically ten working days before each collection unless you have agreed something shorter. Setting up the mandate is a separate process, [AUDDIS](/articles/auddis), with its own submission and its own rejections.
+
+## The Direct Debit Guarantee changes the stakes
+
+Anyone collecting by Direct Debit should read the Guarantee properly at least once. It gives payers the right to an immediate refund from their own bank if a payment is taken in error, and the scheme puts no time limit on that right.
+
+The refund comes from the payer's bank first and is then reclaimed from you through an indemnity claim. So an incorrect collection is not simply reversed - it comes back as a claim against your organisation, and a pattern of them is something your sponsoring bank will notice. Accuracy at the point of setting up the mandate is doing more work than it appears to.
+
+## The reports Bacs sends back
+
+Bacs tells you what went wrong through a set of named reports, and knowing which is which makes the whole system considerably less opaque:
+
+-   **AUDDIS** - rejections of new Direct Debit Instructions you tried to lodge.
+-   **ARUDD** - Direct Debits that were returned unpaid, with a reason: refer to payer, account closed, instruction cancelled.
+-   **ADDACS** - advice that an existing mandate has changed or been cancelled, often because the payer switched banks.
+-   **AWACS** - advice of a wrong account on a Direct Credit, which is the one that tells you a salary or supplier payment went somewhere it should not have.
+
+These reports are also the best free diagnostic you have. If the same reason code keeps appearing, the cause is almost never random - it is usually one specific step in how details get captured.
+
+## Where validation actually helps
+
+Two checks, run before anything is submitted, remove most of the preventable failures:
+
+1.  **[Modulus checking](/articles/modulus-checking)** applies the bank's own published arithmetic to the sort code and account number together. Transpositions and wrong digits fail it, which covers the large majority of bad details that reach a Bacs file.
+    
+2.  **A sort code lookup** against the [EISCD](/articles/eiscd-data-file) confirms the branch exists and returns which schemes it supports. Not every branch accepts Direct Debits, and finding that out from the directory costs nothing compared to finding it out from a rejection.
+    
+
+Neither check tells you an account is open or belongs to the right person - those are different questions, and name matching through Confirmation of Payee answers the second one. What they do is take the entire category of typo-driven failures off the table, which for most organisations is where the volume is.
+
+## How Mintly does it
+
+We run both checks in a single call and return the bank, the branch, and flags for Bacs, Direct Debit, Faster Payments and CHAPS support. You can check one account through the web tool, upload a CSV before a payment run, or [call the API](/articles/bank-validation-api) from whatever system already holds the details.
+
+The free trial runs for 14 days. The most useful first step is usually to put an existing supplier or payroll file through it - that tells you what is already in your data before you decide whether to change anything.

@@ -1,0 +1,85 @@
+export const metadata = {
+  "heading": "Connecting Salesforce to the Mintly API: A Comprehensive Guide",
+  "readTime": "5 mins",
+  "related": [
+    {
+      "title": "What is a sort code and why should I check it?",
+      "href": "/articles/sortcodes"
+    },
+    {
+      "title": "How do I check a bank account and sort code are correct?",
+      "href": "/sort-code-checker"
+    },
+    {
+      "title": "Why should I check account numbers?",
+      "href": "/articles/reasons"
+    }
+  ],
+  "published": "2024-04-05",
+  "modified": "2024-09-02"
+};
+
+In today's interconnected world, integrating disparate systems and applications is crucial for streamlining business processes and enhancing productivity. Salesforce, a leading customer relationship management (CRM) platform, offers various integration options to connect with external services and APIs seamlessly. In this technical article, we'll explore two scenarios for connecting Salesforce to the Mintly API: using External Services for Salesforce Enterprise users and leveraging Zapier for seamless integration.
+
+## Scenario 1: Connecting Salesforce Enterprise to Mintly API using External Services
+
+Salesforce Enterprise users have access to External Services, a powerful feature that allows them to integrate external APIs directly into their Salesforce environment. [Salesforce also has some great videos explaining the process.](https://trailhead.salesforce.com/content/learn/modules/external-services/get-started-with-external-services) Here's how to connect Salesforce to the Mintly API using External Services:
+
+1.  **Define the Named Credential in Salesforce:**
+    -   Log in to your Salesforce Enterprise account and navigate to Setup.
+    -   In the Quick Find box, search for "Named Credentials" and select it.
+    -   Click on the "New" button and enter the necessary details, including the API name, endpoint URL, and authentication settings for the Mintly API, including your unique API Key found in your Mintly account settings. You need to use the endpoint URL
+        
+        ```
+        https://api.mintly.uk/bankAccount/v1/
+        ```
+        
+    -   Save the Named Credential
+2.  **Define the External Service in Salesforce:**
+    -   Log in to your Salesforce Enterprise account and navigate to Setup.
+    -   In the Quick Find box, search for "External Services" and select it.
+    -   Click on the "New External Service" button and select the "From API Specification" button. Enter the necessary details, including the External Service name, description, service schema and Named Credential created above. For Service Schema, select "Absolute URL" and enter the URL:
+        
+        ```
+        https://www.mintly.uk/assets/swagger.json
+        ```
+        
+    -   Click "Save & Next" to continue. You can then confirm that the Service Specification is obtained and validated.
+    -   Click "Save & Next" one more time.
+    -   You will then be presented with the operations available from Mintly's API. Select the operations you wish to use and click "Next"
+3.  **Generate the Apex Code for the External Service:**
+    -   Once the External Service is defined, Salesforce automatically generates Apex code that acts as a wrapper for the Mintly API.
+    -   This Apex code can be used in Salesforce triggers, processes, or custom Lightning components to interact with the Mintly API seamlessly.
+4.  **Invoke the Mintly API in Salesforce:**
+    -   Use the generated Apex code to invoke the Mintly API methods within your Salesforce flows, Einstein Bots, triggers, or custom Apex code.
+    -   Pass the required parameters to the Mintly API methods and handle the responses accordingly within your Salesforce processes.
+
+## Scenario 2: Integrating Salesforce with Mintly API using Zapier
+
+For users who don't have Salesforce Enterprise or prefer a no-code integration solution, Zapier provides a seamless way to connect Salesforce to the Mintly API. Here's how to set up the integration using Zapier:
+
+**Before you start, please [contact us](mailto:support@mintly.uk) so that we can invite you to our private Zapier app.**
+
+1.  **Create a Zap:**
+    -   Log in to your Zapier account and click on the "Create" button.
+    -   Choose Salesforce as the trigger app and select the trigger event that will initiate the integration, such as "New Lead", "New Record" or "Updated Field opn Record"
+2.  **Set up the Action Step:**
+    -   Add the Mintly app and select the "Validate" event for the type of validation you require (e.g. Validate Account).
+    -   Click Continue and enter your Mintly account credentials.
+    -   Configure the step by clicking the event fields and assign a value from the Salesforce trigger.
+3.  **Set up another Action Step:**
+    -   Add the Salesforce app as the action app.
+    -   Select the Update Record event.
+    -   Configure the step by clicking the fields to update and assign a value from the Mintly action result.
+4.  **Test and Activate the Zap:**
+    -   Test the integration to ensure that data from Salesforce is successfully sent to the Mintly API.
+    -   Once the test is successful, activate the Zap to start the integration process.
+    -   You can start using your integration! Note that Salesforce triggers events every 10-15 minutes to Zapier, so there may be a small delay.
+
+<Image src="/assets/img/theme/checking-number.png" alt="Lady using Mintly to check a sort code and account" width={400} height={1000} />
+
+For a comprehensive guide about connecting Salesforce to Mintly please [get in touch with us](/#contact).
+
+## Seamlessly Connect Salesforce to Mintly API
+
+Whether you're a Salesforce Enterprise user looking for a native integration solution or prefer a no-code approach using Zapier, connecting Salesforce to the Mintly API is straightforward and efficient. By leveraging External Services or Zapier, businesses can streamline their processes, enhance data visibility, and optimize their operations effectively. Explore the integration options that best suit your needs and unlock the full potential of Salesforce and Mintly API integration.

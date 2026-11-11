@@ -1,0 +1,82 @@
+export const metadata = {
+  "heading": "SWIFT Codes and IBANs: What They Are and How to Check Them",
+  "readTime": "4 mins",
+  "related": [
+    {
+      "title": "What is a sort code and why should I check it?",
+      "href": "/articles/sortcodes"
+    },
+    {
+      "title": "What is modulus checking and why should I do it?",
+      "href": "/articles/modulus-checking"
+    },
+    {
+      "title": "Bank validation APIs: how they work",
+      "href": "/articles/bank-validation-api"
+    }
+  ],
+  "published": "2023-07-05",
+  "modified": "2026-09-09"
+};
+
+Send money abroad and two pieces of reference data decide whether it arrives: a SWIFT/BIC code that identifies the receiving bank, and an IBAN that identifies the account at that bank. They do different jobs, and people mix them up constantly - which is why so many failed international payments come down to one or the other being wrong.
+
+## What a SWIFT code actually is
+
+SWIFT is the Society for Worldwide Interbank Financial Telecommunication, a co-operative based in Belgium that runs the messaging network banks use to talk to each other. One thing worth being clear about up front: SWIFT does not move money. It moves instructions. The money itself moves through correspondent accounts that banks hold with one another. SWIFT is the telegram, not the armoured van.
+
+Every institution on the network has a Business Identifier Code (BIC), defined by ISO 9362. Most people call it a SWIFT code; they are the same thing. It is 8 or 11 characters:
+
+-   **4 letters** - the bank code, such as BARC for Barclays
+-   **2 letters** - the country, using ISO 3166-1 (GB, DE, FR)
+-   **2 characters** - the location within that country
+-   **3 characters, optional** - the branch. XXX means head office.
+
+<Image src="/assets/img/theme/bank-customer.png" alt="Checking bank accounts with a mobile app" width={1200} height={2000} />
+
+So BARCGB22 points at Barclays' head office in the UK. Add three more characters and you are pointing at a particular branch or department. You will find your own bank's BIC in online banking, on your statements, or on the bank's website - they are published openly, because a code nobody can look up is no use to anyone.
+
+## What an IBAN is
+
+An IBAN - International Bank Account Number, standardised as ISO 13616 - identifies one specific account. Where the BIC gets a payment to the right bank, the IBAN gets it to the right account inside that bank.
+
+The format is a two-letter country code, two check digits, then the country's own domestic account identifier (the BBAN). Length is fixed per country but differs between them: 22 characters in the UK, 18 in Denmark, 31 in Malta. The maximum allowed is 34.
+
+A UK IBAN is assembled entirely from details you already have: `GB` + 2 check digits + a 4-letter bank code + the 6-digit [sort code](/articles/sortcodes) + the 8-digit account number.
+
+One thing that catches people out: not every country uses IBANs at all. The United States, Canada, Australia, New Zealand and most of Asia do not. For those you need the domestic routing number plus a BIC. If a supplier sends you what they call their US IBAN, it is not one.
+
+## How the IBAN check digits work
+
+The two digits after the country code are not decoration. They are a MOD-97-10 checksum from ISO 7064, and you can verify one by hand:
+
+1.  Move the first four characters to the end of the string.
+2.  Replace every letter with a number, where A is 10, B is 11, and so on up to Z at 35.
+3.  Treat the result as one very long integer and divide it by 97.
+4.  A valid IBAN leaves a remainder of exactly 1.
+
+That one test catches every single-digit error and every transposition of two adjacent characters, which between them cover most of what people actually get wrong when copying an IBAN off an invoice.
+
+What it tells you nothing about is the account. An IBAN can pass MOD-97 cleanly and still be an account that closed last year, or one that was never opened. The checksum confirms the string is well formed. That is the whole of its job.
+
+## The part most validators skip
+
+Plenty of countries put their own check digits inside the BBAN, underneath the IBAN checksum. Spain, France, Italy, Belgium and Portugal all do, each with a different algorithm. A validator that only runs MOD-97 will accept an IBAN whose national portion is nonsense, because the outer checksum has no opinion about what the inner digits mean.
+
+The UK shows the same idea from the other side. A UK IBAN contains the sort code and account number verbatim, so once the MOD-97 check passes you can pull them straight back out and run [modulus checking](/articles/modulus-checking) on them - a much stronger test than the IBAN checksum on its own, and one that uses the bank's own published rules.
+
+## Checking a BIC
+
+BIC validation is mostly structural: the right length, letters where letters belong, and a genuine ISO country code in positions five and six. That catches typos, which is worth doing.
+
+It does not confirm the code is registered, or that the bank is reachable for the payment type you have in mind. Those are directory lookups rather than arithmetic, and they are a separate step.
+
+## How Mintly handles it
+
+We validate IBANs against the MOD-97 checksum, the expected length and format for that country, and - where they exist - the national check digit rules underneath. It is one API call per account.
+
+For the UK, Republic of Ireland and Germany we go further and resolve the IBAN back to a branch: bank name, branch address, and which payment schemes that branch supports. That last field earns its keep more often than you would expect. Finding out a branch does not accept Direct Debits before you set up the mandate is a good deal cheaper than finding out afterwards.
+
+Other countries return format and checksum validation. If you need branch-level data somewhere we do not cover yet, tell us - that is broadly how the list has grown so far.
+
+If you are building international payments, the sensible order is: check the IBAN structure and checksum, confirm the BIC, then validate the domestic account details underneath wherever the country lets you. Each step costs very little. Recalling a misdirected international payment takes weeks and often fails. [Get in touch](/#contact) if you want to talk through what your setup needs.

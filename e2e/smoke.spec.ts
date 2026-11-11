@@ -2,9 +2,9 @@ import { expect, test } from "@playwright/test";
 
 test("home page renders", async ({ page }) => {
   await page.goto("/");
-  await expect(page).toHaveTitle(/Mintly/);
-  await expect(page.getByRole("heading", { level: 1 })).toContainText("Bank account validation");
-  await expect(page.getByRole("heading", { name: "Products" })).toBeVisible();
+  await expect(page).toHaveTitle(/Bank Account Validation/);
+  await expect(page.getByRole("heading", { level: 1 })).toContainText("Bank Account Validation");
+  await expect(page.getByRole("heading", { name: "Try it yourself" })).toBeVisible();
 });
 
 test("health check responds", async ({ request }) => {
